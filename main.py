@@ -1,12 +1,18 @@
-import json
-import uvicorn
+import asyncio
 
+import uvicorn
 from fastapi import FastAPI
-from api import get_schedule
+
+from routes import router
 
 app = FastAPI()
+app.include_router(router)
 
+async def main():
+    """Функция для асинхронного запуска uvicorn."""
+    config = uvicorn.Config("main:app", host="localhost", port=5000, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 if __name__ == "__main__":
-    schedule = get_schedule()
-    print(json.dumps(schedule, ensure_ascii=False, indent=4))
+    asyncio.run(main())
