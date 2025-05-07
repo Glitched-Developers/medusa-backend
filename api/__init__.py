@@ -2,13 +2,12 @@
 API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
 from datetime import datetime
-from typing import Dict, List, Optional, Union, Any, TypedDict
+from typing import Dict, List, Optional, Any, TypedDict
 
 import enum
 import httpx
 import re
 from bs4 import BeautifulSoup, NavigableString
-from fastapi import HTTPException
 
 from utils import week_validator
 
@@ -342,7 +341,7 @@ async def fetch_schedule(week: Optional[int] = None, group: int = 90002493) -> S
         Dictionary with parsed schedule data and metadata
     """
     if week is None:
-        week = fetch_week()
+        week = await fetch_week()
 
     week_validator(week)
 

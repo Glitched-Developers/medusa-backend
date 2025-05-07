@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
+
+import tasks
 from api import fetch_week, fetch_schedule
-from models import WeekPayload, WeekResponse, SchedulePayload, ScheduleResponse
+from models import WeekPayload, WeekResponse, SchedulePayload, ScheduleResponse, TodaySchedulePayload
 
 router = APIRouter()
 
@@ -27,6 +29,27 @@ async def get_week_endpoint(payload: WeekPayload) -> WeekResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
+@router.post("/actual", response_model=ScheduleResponse)
+async def get_today_endpoint(payload: TodaySchedulePayload) -> ScheduleResponse:
+    """
+    Endpoint to get today's schedule based on the action and optional base week.
+
+    Args:
+        payload: The request payload with action and optional week
+
+    Returns:
+        ScheduleResponse containing the calculated schedule
+
+    Raises:
+        HTTPException: If there's an error fetching the schedule data
+    """
+    try:
+        schedule = await tasks.check_schedule_update(payload.group)
+        return ScheduleResponse(schedule=schedule)
+    except ConnectionError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 @router.post("/schedule", response_model=ScheduleResponse)
 async def get_schedule_endpoint(payload: SchedulePayload):
     """

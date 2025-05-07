@@ -1,9 +1,6 @@
 from fastapi import HTTPException
-
-from fastapi import HTTPException
 from datetime import datetime
 import calendar
-
 
 def week_validator(week: int):
     """
@@ -79,6 +76,7 @@ def week_validator(week: int):
         #         status_code=400,
         #         detail=f"Invalid week period: should be exactly 7 days, got {days_diff} days"
         #     )
+
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date in the week code")
 
