@@ -47,12 +47,14 @@ class TestMainFunction:
     """Test cases for main() function"""
     
     @patch('main.init_database')
+    @patch('main.schedule_update_task')
     @patch('main.asyncio.create_task')
     @patch('main.uvicorn.Server.serve')
     async def test_main_function_initialization(
         self, 
         mock_serve, 
         mock_create_task, 
+        mock_schedule_task,
         mock_init_db
     ):
         """Test that main function initializes correctly"""
@@ -74,12 +76,14 @@ class TestMainFunction:
     
     @patch.dict('os.environ', {'PORT': '9000'})
     @patch('main.init_database')
+    @patch('main.schedule_update_task')
     @patch('main.asyncio.create_task')
     @patch('main.uvicorn.Server.serve')
     async def test_main_function_custom_port(
         self, 
         mock_serve, 
         mock_create_task, 
+        mock_schedule_task,
         mock_init_db
     ):
         """Test that main function uses custom port from environment"""

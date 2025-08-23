@@ -35,7 +35,7 @@ class WeekResponse(BaseModel):
     week: str = Field(
         ..., 
         description="Academic week number as string",
-        example="15"
+        json_schema_extra={"examples": ["15"]}
     )
 
 
@@ -73,7 +73,7 @@ class ScheduleResponse(BaseModel):
     schedule: Dict[str, Any] = Field(
         ..., 
         description="Complete schedule data with class information",
-        example={
+        json_schema_extra={"examples": [{
             "days": {
                 "monday": [
                     {
@@ -86,5 +86,5 @@ class ScheduleResponse(BaseModel):
             },
             "group": 12345,
             "week": 15
-        }
+        }]}
     )

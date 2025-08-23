@@ -28,3 +28,4 @@ watchfiles==1.0.5
 websockets==15.0.1
 SQLAlchemy~=2.0.40
 xxhash~=3.5.0
+aiosqlite==0.21.0

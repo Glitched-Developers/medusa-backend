@@ -10,7 +10,7 @@ Available endpoints:
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Path
 from typing import Optional
 
 import tasks
@@ -80,7 +80,7 @@ async def get_weeks(
     description="Fetch the current week's schedule for a specific group"
 )
 async def get_current_schedule(
-    group_id: int = Query(..., description="BSU group ID", example=12345)
+    group_id: int = Path(..., description="BSU group ID", examples=[12345])
 ) -> ScheduleResponse:
     """
     Get current schedule for a specific BSU group.
@@ -117,11 +117,11 @@ async def get_current_schedule(
     description="Fetch schedule for a specific group and week number"
 )
 async def get_schedules(
-    group_id: int = Query(..., description="BSU group ID", example=12345),
+    group_id: int = Path(..., description="BSU group ID", examples=[12345]),
     week: Optional[int] = Query(
         None, 
         description="Academic week number (defaults to current week)", 
-        example=15
+        examples=[15]
     )
 ) -> ScheduleResponse:
     """
