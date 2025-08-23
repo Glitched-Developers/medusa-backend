@@ -1,3 +1,18 @@
+"""
+Database Module
+
+This module handles database operations for the Medusa Backend application.
+It manages SQLite database connections and provides the schedule_by_groups table
+for storing BSU schedule data with hash-based change detection.
+
+Database Schema:
+    schedule_by_groups:
+        - group (Integer, PK): BSU group ID
+        - hash (String): Content hash for change detection
+        - data (String): JSON schedule data
+        - timestamp (String): Last update timestamp
+"""
+
 import os
 
 from sqlalchemy import Column, MetaData, String, Integer, Table
@@ -5,53 +20,67 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
 
+# Database configuration
 meta = MetaData()
 DATABASE_URL = "sqlite+aiosqlite:///Schedules.db"
 
+# Async SQLite engine for concurrent operations
 engine = create_async_engine(DATABASE_URL, echo=False)
 
-table = Table("schedule_by_groups", meta,
-          Column("group", Integer, primary_key=True),
-          Column("hash", String(128), nullable=False),
-          Column("data", String(), nullable=False),
-          Column("timestamp", String(8), nullable=False),
-        )
+# Schedule storage table definition
+table = Table(
+    "schedule_by_groups", 
+    meta,
+    Column("group", Integer, primary_key=True, comment="BSU group ID"),
+    Column("hash", String(128), nullable=False, comment="Content hash for change detection"),
+    Column("data", String(), nullable=False, comment="JSON schedule data"),
+    Column("timestamp", String(8), nullable=False, comment="Last update timestamp"),
+)
 
 async def init_database() -> None:
     """
-    Initializes the database. If the database file does not exist, it creates a new database.
-    If the database file exists, it checks for the existence of the required table and creates it if necessary.
-    If an error occurs, the database structure is recreated.
-
+    Initialize the SQLite database and create required tables.
+    
+    This function performs database initialization with the following logic:
+    1. If database file doesn't exist, creates new database with tables
+    2. If database exists, verifies table structure and creates missing tables
+    3. In case of errors, recreates the entire database structure
+    
+    The function ensures the schedule_by_groups table exists with proper schema
+    for storing BSU schedule data with hash-based change detection.
+    
     Raises:
-        SQLAlchemyError: If there is an issue with the database operations.
+        SQLAlchemyError: If database operations fail during initialization
+        
+    Note:
+        This function is safe to call multiple times - it won't recreate
+        existing valid database structures.
     """
-    # Check if the database file exists
+    # Check if the database file exists on filesystem
     db_file_exists = os.path.exists("Schedules.db")
 
     if not db_file_exists:
-        # If the file does not exist, create the database from scratch
+        # Create new database from scratch
         async with engine.begin() as conn:
             await conn.run_sync(meta.create_all)
         return
 
-    # If the file exists, check for the existence of the table
+    # Verify existing database structure
     try:
-        # Check for the existence of the table using SQLAlchemy inspector
         async with engine.begin() as conn:
-            # Use SQLAlchemy inspector to verify if the table exists
             def check_table_exists(connection):
+                """Check if schedule_by_groups table exists in database."""
                 inspector = inspect(connection)
                 return "schedule_by_groups" in inspector.get_table_names()
 
             table_exists = await conn.run_sync(check_table_exists)
 
             if not table_exists:
-                # If the table does not exist, create it
+                # Create missing table
                 await conn.run_sync(meta.create_all)
-            # If the table exists, do nothing
+                
     except SQLAlchemyError:
-        # In case of an error, recreate the database structure
+        # Recover from database corruption by recreating structure
         async with engine.begin() as conn:
             await conn.run_sync(meta.drop_all)
             await conn.run_sync(meta.create_all)

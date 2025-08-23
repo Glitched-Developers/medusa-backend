@@ -1,71 +1,154 @@
-from fastapi import APIRouter, HTTPException
+"""
+API Routes Module
+
+This module defines the REST API endpoints for the Medusa Backend application.
+It provides endpoints for fetching week calculations and BSU class schedules.
+
+Available endpoints:
+- GET /weeks: Get week number calculations
+- GET /groups/{group_id}/schedules/current: Get current schedule for a group
+- GET /groups/{group_id}/schedules: Get schedule for a specific group and week
+"""
+
+from fastapi import APIRouter, HTTPException, Query
+from typing import Optional
 
 import tasks
-from api import fetch_week, fetch_schedule
-from models import WeekPayload, WeekResponse, SchedulePayload, ScheduleResponse, TodaySchedulePayload
+from api import fetch_week, fetch_schedule, WeekActions
+from models import WeekResponse, ScheduleResponse
 
-router = APIRouter()
+# Initialize router with tags for API documentation
+router = APIRouter(
+    tags=["schedules"],
+    responses={
+        503: {"description": "Service unavailable - connection error"},
+        500: {"description": "Internal server error"}
+    }
+)
 
 
-@router.post("/week", response_model=WeekResponse)
-async def get_week_endpoint(payload: WeekPayload) -> WeekResponse:
+@router.get(
+    "/weeks", 
+    response_model=WeekResponse,
+    summary="Get week number",
+    description="Calculate week number based on action (current/next/previous week)"
+)
+async def get_weeks(
+    action: WeekActions = Query(
+        WeekActions.THIS_WEEK, 
+        description="Week action to perform (this_week, next_week, last_week)"
+    ),
+    week: Optional[int] = Query(
+        None, 
+        description="Base week number for calculations (optional)"
+    )
+) -> WeekResponse:
     """
-    Endpoint to get the week number based on the action and optional base week.
+    Get the week number based on the specified action and optional base week.
+
+    This endpoint calculates academic week numbers for BSU schedule system.
+    It can return the current week, next week, or previous week number.
 
     Args:
-        payload: The request payload with action and optional week
+        action: Week action to perform (this_week, next_week, last_week)
+        week: Base week number for relative calculations (optional)
 
     Returns:
-        WeekResponse containing the calculated week number
+        WeekResponse: JSON response containing the calculated week number
 
     Raises:
-        HTTPException: If there's an error fetching the week data
+        HTTPException: 
+            - 503: Service unavailable due to connection errors
+            - 500: Internal server error for unexpected issues
+
+    Example:
+        GET /weeks?action=this_week -> {"week": "15"}
+        GET /weeks?action=next_week&week=10 -> {"week": "11"}
     """
     try:
-        week_number = await fetch_week(action=payload.action, week=payload.week or 0)
+        week_number = await fetch_week(action=action, week=week or 0)
         return WeekResponse(week=str(week_number))
     except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
-@router.post("/actual", response_model=ScheduleResponse)
-async def get_today_endpoint(payload: TodaySchedulePayload) -> ScheduleResponse:
+@router.get(
+    "/groups/{group_id}/schedules/current", 
+    response_model=ScheduleResponse,
+    summary="Get current schedule",
+    description="Fetch the current week's schedule for a specific group"
+)
+async def get_current_schedule(
+    group_id: int = Query(..., description="BSU group ID", example=12345)
+) -> ScheduleResponse:
     """
-    Endpoint to get today's schedule based on the action and optional base week.
+    Get current schedule for a specific BSU group.
+
+    This endpoint fetches the schedule for the current academic week.
+    It automatically determines the current week and returns the corresponding schedule.
+    The schedule data is automatically updated via background tasks.
 
     Args:
-        payload: The request payload with action and optional week
+        group_id: The BSU group ID for which the schedule is requested
 
     Returns:
-        ScheduleResponse containing the calculated schedule
+        ScheduleResponse: JSON response containing the current schedule data
 
     Raises:
-        HTTPException: If there's an error fetching the schedule data
+        HTTPException: 
+            - 503: Service unavailable due to connection errors
+            - 500: Internal server error for unexpected issues
+
+    Example:
+        GET /groups/12345/schedules/current
     """
     try:
-        schedule = await tasks.check_schedule_update(payload.group)
+        schedule = await tasks.check_schedule_update(group_id)
         return ScheduleResponse(schedule=schedule)
     except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-@router.post("/schedule", response_model=ScheduleResponse)
-async def get_schedule_endpoint(payload: SchedulePayload):
+@router.get(
+    "/groups/{group_id}/schedules", 
+    response_model=ScheduleResponse,
+    summary="Get schedule by week",
+    description="Fetch schedule for a specific group and week number"
+)
+async def get_schedules(
+    group_id: int = Query(..., description="BSU group ID", example=12345),
+    week: Optional[int] = Query(
+        None, 
+        description="Academic week number (defaults to current week)", 
+        example=15
+    )
+) -> ScheduleResponse:
     """
-    Endpoint to get the schedule based on the action and optional base week.
+    Get schedule for a specific BSU group and academic week.
+
+    This endpoint allows fetching schedules for any specific week number.
+    If no week is specified, it defaults to the current academic week.
+    The schedule data includes class times, subjects, rooms, and instructors.
 
     Args:
-        payload: The request payload with action and optional week
+        group_id: The BSU group ID for which the schedule is requested
+        week: Academic week number (optional, defaults to current week)
 
     Returns:
-        ScheduleResponse containing the calculated schedule
+        ScheduleResponse: JSON response containing the schedule data for the specified week
 
     Raises:
-        HTTPException: If there's an error fetching the schedule data
+        HTTPException: 
+            - 503: Service unavailable due to connection errors
+            - 500: Internal server error for unexpected issues
+
+    Example:
+        GET /groups/12345/schedules?week=15
+        GET /groups/12345/schedules  # Uses current week
     """
     try:
-        schedule = await fetch_schedule(group=payload.group, week=payload.week)
+        schedule = await fetch_schedule(group=group_id, week=week)
         return ScheduleResponse(schedule=schedule)
     except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
