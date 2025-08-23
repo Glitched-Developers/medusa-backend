@@ -5,7 +5,7 @@ services:
     # Для разработки - собираем локально
     build: .
     # Для продакшена - используем образ с ghcr.io
-    # image: ghcr.io/your-username/medusa-backend:latest
+    # image: ghcr.io/shizamuru-dev/medusa-backend:latest
     container_name: medusa-backend
     ports:
       - "${PORT:-8000}:8000"

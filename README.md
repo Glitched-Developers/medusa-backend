@@ -25,7 +25,7 @@ FastAPI бэкенд для получения расписания БГУ с а
 
 ```bash
 # Клонируем
-git clone <your-repo>
+git clone https://gitlab.com/shizamuru/medusa-backend
 cd medusa-backend
 
 # Настраиваем
