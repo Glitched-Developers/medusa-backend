@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 # Database configuration
 meta = MetaData()
-DATABASE_URL = "sqlite+aiosqlite:///Schedules.db"
+DATABASE_URL = "sqlite+aiosqlite:///./data/Schedules.db"
 
 # Async SQLite engine for concurrent operations
 engine = create_async_engine(DATABASE_URL, echo=False)
@@ -56,8 +56,11 @@ async def init_database() -> None:
         This function is safe to call multiple times - it won't recreate
         existing valid database structures.
     """
+    # Ensure data directory exists
+    os.makedirs("./data", exist_ok=True)
+    
     # Check if the database file exists on filesystem
-    db_file_exists = os.path.exists("Schedules.db")
+    db_file_exists = os.path.exists("./data/Schedules.db")
 
     if not db_file_exists:
         # Create new database from scratch
