@@ -60,7 +60,7 @@ async def init_database() -> None:
     os.makedirs("./data", exist_ok=True)
     
     # Check if the database file exists on filesystem
-    db_file_exists = os.path.exists("./data/Schedules.db")
+    db_file_exists = os.path.exists("./data/zSchedules.db")
 
     if not db_file_exists:
         # Create new database from scratch

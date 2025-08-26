@@ -13,7 +13,6 @@ The application includes:
 """
 
 import asyncio
-import os
 
 import uvicorn
 
@@ -60,13 +59,12 @@ async def main():
 
     # Configure and start the web server
     logger.info("Starting the server...")
-    port = int(os.getenv("PORT", 8000))
-    logger.info(f"Server will run on http://localhost:{port}")
+    logger.info(f"Server will run on http://localhost:8080")
     
     config = uvicorn.Config(
         "main:app", 
-        host="localhost", 
-        port=port, 
+        host="0.0.0.0", 
+        port=8080,
         log_level="info"
     )
     server = uvicorn.Server(config)

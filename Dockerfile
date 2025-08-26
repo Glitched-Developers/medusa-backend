@@ -37,7 +37,7 @@ LABEL version="1.0.0"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PORT=8000
+ENV PORT=8001
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -57,6 +57,9 @@ WORKDIR /app
 
 # Copy application code with proper ownership
 COPY --chown=app:app . .
+
+# Create data directory with proper permissions
+RUN mkdir -p /app/data && chown -R app:app /app/data
 
 # Switch to non-root user
 USER app
