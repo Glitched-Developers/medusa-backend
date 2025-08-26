@@ -18,6 +18,7 @@ import uvicorn
 
 from logger import setup_logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_database
 from routes import router
@@ -34,6 +35,21 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Add CORS middleware to allow requests from dashboard
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Next.js default development port
+        "http://127.0.0.1:3000",  # Alternative localhost
+        "http://localhost:3001",  # Alternative port
+        "http://127.0.0.1:3001"   # Alternative localhost and port
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 app.include_router(router)
 
 async def main():

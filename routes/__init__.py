@@ -5,17 +5,22 @@ This module defines the REST API endpoints for the Medusa Backend application.
 It provides endpoints for fetching week calculations and BSU class schedules.
 
 Available endpoints:
+- GET /: Redirect to external frontend application
+- GET /stats: Get server status as JSON API
 - GET /weeks: Get week number calculations
 - GET /groups/{group_id}/schedules/current: Get current schedule for a group
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 """
 
 from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi.responses import RedirectResponse
 from typing import Optional
+import datetime
 
 import tasks
 from api import fetch_week, fetch_schedule, WeekActions
 from models import WeekResponse, ScheduleResponse
+from version import get_version, get_git_commit, get_git_branch
 
 # Initialize router with tags for API documentation
 router = APIRouter(
@@ -25,6 +30,78 @@ router = APIRouter(
         500: {"description": "Internal server error"}
     }
 )
+
+
+@router.get(
+    "/",
+    summary="Redirect to frontend",
+    description="Redirect to the frontend application"
+)
+async def redirect_to_frontend():
+    """
+    Redirect to the frontend application.
+    
+    You can modify this to redirect to your Node.js frontend URL.
+    For now, it redirects to the API docs.
+    
+    Returns:
+        RedirectResponse: Redirect to frontend application
+    """
+    return RedirectResponse(url="http://localhost:3000", status_code=302)
+
+
+@router.get(
+    "/stats",
+    summary="Server status API",
+    description="Get server status and basic information as JSON"
+)
+async def get_server_stats():
+    """
+    Get server status with basic information.
+    
+    Returns server health status, current time, and API information as JSON.
+    Now includes Git-based version information with commit hash and branch.
+    
+    Returns:
+        dict: Server status information including:
+            - status: Server health status
+            - timestamp: Current server time
+            - service_info: API metadata
+            - git_info: Git version, commit, and branch information
+    
+    Example:
+        GET /stats -> {"status": "OK", "timestamp": "2024-01-15T10:30:00Z", "version": "v1.0.0+abc1234", ...}
+    """
+    # Get Git information
+    version = get_version()
+    commit = get_git_commit()
+    branch = get_git_branch()
+    
+    response = {
+        "status": "OK",
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "service": "Medusa Backend API",
+        "version": version,
+        "description": "RESTful API for BSU class schedules management",
+        "endpoints": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "weeks": "/weeks",
+            "schedules": "/groups/{group_id}/schedules"
+        }
+    }
+    
+    # Add Git information if available
+    git_info = {}
+    if commit:
+        git_info["commit"] = commit
+    if branch:
+        git_info["branch"] = branch
+    
+    if git_info:
+        response["git"] = git_info
+    
+    return response
 
 
 @router.get(
@@ -154,5 +231,4 @@ async def get_schedules(
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-
 

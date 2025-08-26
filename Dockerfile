@@ -37,7 +37,7 @@ LABEL version="1.0.0"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PORT=8001
+ENV PORT=8080
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
