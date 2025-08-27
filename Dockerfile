@@ -34,7 +34,8 @@ WORKDIR /app
 # Install latest pnpm
 RUN npm install -g pnpm@latest
 
-# Copy dashboard source first
+# Set working directory to dashboard and copy all files
+WORKDIR /app/dashboard
 COPY dashboard/ ./
 
 # Install dependencies
@@ -84,9 +85,9 @@ WORKDIR /app
 COPY --chown=app:app . .
 
 # Copy dashboard build from builder stage
-COPY --from=dashboard-builder --chown=app:app /app/.next/standalone ./dashboard/
-COPY --from=dashboard-builder --chown=app:app /app/.next/static ./dashboard/.next/static
-COPY --from=dashboard-builder --chown=app:app /app/public ./dashboard/public
+COPY --from=dashboard-builder --chown=app:app /app/dashboard/.next/standalone ./dashboard/
+COPY --from=dashboard-builder --chown=app:app /app/dashboard/.next/static ./dashboard/.next/static
+COPY --from=dashboard-builder --chown=app:app /app/dashboard/public ./dashboard/public
 
 # Create data directory with proper permissions
 RUN mkdir -p /app/data && chown -R app:app /app/data
