@@ -68,6 +68,9 @@ pytest.ini
 .env.development
 .env.test
 
+# Important: DO NOT exclude dashboard/lib - it contains essential files for Next.js build
+!dashboard/lib/
+
 # Database files (if not needed in container)
 *.db
 *.sqlite
