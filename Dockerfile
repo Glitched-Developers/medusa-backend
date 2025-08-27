@@ -29,14 +29,14 @@ RUN pip install --upgrade pip \
 # Stage 2: Build Next.js Dashboard
 FROM node:18-alpine AS dashboard-builder
 
-WORKDIR /app/dashboard
+WORKDIR /app
 
 # Install dependencies
 COPY dashboard/package.json dashboard/pnpm-lock.yaml* ./
 RUN corepack enable pnpm && pnpm i --frozen-lockfile
 
 # Copy dashboard source and build
-COPY dashboard/ .
+COPY dashboard/ ./
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable pnpm && pnpm run build
 
@@ -80,9 +80,9 @@ WORKDIR /app
 COPY --chown=app:app . .
 
 # Copy dashboard build from builder stage
-COPY --from=dashboard-builder --chown=app:app /app/dashboard/.next/standalone ./dashboard/
-COPY --from=dashboard-builder --chown=app:app /app/dashboard/.next/static ./dashboard/.next/static
-COPY --from=dashboard-builder --chown=app:app /app/dashboard/public ./dashboard/public
+COPY --from=dashboard-builder --chown=app:app /app/.next/standalone ./dashboard/
+COPY --from=dashboard-builder --chown=app:app /app/.next/static ./dashboard/.next/static
+COPY --from=dashboard-builder --chown=app:app /app/public ./dashboard/public
 
 # Create data directory with proper permissions
 RUN mkdir -p /app/data && chown -R app:app /app/data
