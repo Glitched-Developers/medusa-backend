@@ -31,14 +31,18 @@ FROM node:18-alpine AS dashboard-builder
 
 WORKDIR /app
 
-# Install dependencies
-COPY dashboard/package.json dashboard/pnpm-lock.yaml* ./
-RUN corepack enable pnpm && pnpm i --frozen-lockfile
+# Install latest pnpm
+RUN npm install -g pnpm@latest
 
-# Copy dashboard source and build
+# Copy dashboard source first
 COPY dashboard/ ./
+
+# Install dependencies
+RUN pnpm i --frozen-lockfile
+
+# Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN corepack enable pnpm && pnpm run build
+RUN pnpm run build
 
 # Stage 3: Production image
 FROM python:3.12-slim AS production
