@@ -1,46 +1,26 @@
 services:
-  medusa-backend:
-    #image: ghcr.io/shizamuru-dev/medusa-backend:latest
+  medusa:
+    image: ghcr.io/shizamuru-dev/medusa-backend:latest
     # if need build from source
-    build: .
-    container_name: medusa-backend
+    #build: .
+    container_name: medusa
     ports:
-      - "8080:8080"
+      - "8080:8080"  # Backend API
+      - "3000:3000"  # Dashboard
     environment:
       - PORT=8080
+      - DASHBOARD_PORT=3000
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
     volumes:
       - medusa_data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/docs", "&&", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
-    networks:
-      - medusa-network
-
-  medusa-dashboard:
-    build: 
-      context: ./dashboard
-      dockerfile: Dockerfile
-    container_name: medusa-dashboard
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_TELEMETRY_DISABLED=1
-      - API_BASE_URL=http://medusa-backend:8080
-    depends_on:
-      medusa-backend:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      start_period: 45s
     networks:
       - medusa-network
 
