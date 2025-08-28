@@ -1,7 +1,6 @@
 # Multi-stage build for Medusa Backend (FastAPI) + Dashboard (Next.js)
-# Fixed version with proper file copying and module resolution
-COPY . ./app
-WORKDIR ./app
+# Using official pnpm Docker patterns
+
 # Stage 1: Build Python dependencies
 FROM python:3.12-slim AS python-deps
 
@@ -21,22 +20,29 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Stage 2: Build Next.js Dashboard
-FROM node:20-alpine AS dashboard-build
+# Stage 2: Dashboard base with pnpm
+FROM node:20-slim AS dashboard-base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
-# Install pnpm
-RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
+# Copy dashboard files
+COPY dashboard /app/dashboard
+WORKDIR /app/dashboard
 
-# Set working directory and copy package files first
-WORKDIR ./app/dashboard
+# Stage 3: Install dashboard dependencies
+FROM dashboard-base AS dashboard-deps
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-RUN pnpm install --frozen-lockfile
+# Stage 4: Build dashboard
+FROM dashboard-base AS dashboard-build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm i
+RUN pnpm run build
 
-# Stage 3: Production runtime
-FROM python:3.12-slim
+# Stage 5: Production runtime
+FROM python:3.12-slim AS production
 
 LABEL maintainer="shizamuru-dev" \
       description="Medusa Backend + Dashboard - BSU Schedule API with UI" \
@@ -50,13 +56,13 @@ ENV PYTHONUNBUFFERED=1 \
     BACKEND_PORT=8080 \
     DASHBOARD_PORT=3000
 
-# Install runtime dependencies
+# Install runtime dependencies including Node.js
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 20
+# Install Node.js 20 and enable pnpm
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     corepack enable
@@ -68,11 +74,18 @@ RUN groupadd --gid 1001 app && \
 # Copy Python virtual environment
 COPY --from=python-deps /opt/venv /opt/venv
 
-# Set working directory and copy backend
-WORKDIR ./app
+# Set working directory
+WORKDIR /app
+
+# Copy backend application
 COPY --chown=app:app . .
 
-# Create directories with proper permissions
+# Copy built dashboard from build stage
+COPY --from=dashboard-build --chown=app:app /app/dashboard/.next/standalone ./dashboard/
+COPY --from=dashboard-build --chown=app:app /app/dashboard/.next/static ./dashboard/.next/static/
+COPY --from=dashboard-build --chown=app:app /app/dashboard/public ./dashboard/public/
+
+# Create necessary directories with proper permissions
 RUN mkdir -p /app/data /app/logs && \
     chown -R app:app /app/data /app/logs
 
