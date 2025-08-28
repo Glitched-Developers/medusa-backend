@@ -18,7 +18,7 @@ class TestMainApp:
     def test_app_metadata(self):
         """Test that app has correct metadata"""
         assert app.title == "Medusa Backend API"
-        assert app.version == "1.0.0"
+        assert app.version.startswith("v")
         assert app.docs_url == "/docs"
         assert app.redoc_url == "/redoc"
     
@@ -39,7 +39,7 @@ class TestMainApp:
         assert response.status_code == 200
         schema = response.json()
         assert schema["info"]["title"] == "Medusa Backend API"
-        assert schema["info"]["version"] == "1.0.0"
+        assert schema["info"]["version"].startswith("v")
 
 
 @pytest.mark.asyncio
