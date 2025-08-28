@@ -1,6 +1,7 @@
 # Multi-stage build for Medusa Backend (FastAPI) + Dashboard (Next.js)
 # Fixed version with proper file copying and module resolution
-
+COPY . /app
+WORKDIR /app
 # Stage 1: Build Python dependencies
 FROM python:3.12-slim AS python-deps
 
@@ -24,29 +25,15 @@ RUN pip install --upgrade pip && \
 FROM node:20-alpine AS dashboard-build
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
 
 # Set working directory and copy package files first
 WORKDIR /app/dashboard
-COPY dashboard/package.json dashboard/pnpm-lock.yaml ./
 
-# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy ALL source files - this ensures lib/ and other directories are included
-COPY dashboard ./
-
-# Debug: Verify files are copied correctly
-RUN echo "=== Files after copy ===" && \
-    ls -la && \
-    echo "=== lib directory contents ===" && \
-    ls -la lib/ && \
-    echo "=== tsconfig.json ===" && \
-    cat tsconfig.json
-
-# Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm run build
+RUN pnpm i
 
 # Stage 3: Production runtime
 FROM python:3.12-slim
@@ -84,11 +71,6 @@ COPY --from=python-deps /opt/venv /opt/venv
 # Set working directory and copy backend
 WORKDIR /app
 COPY --chown=app:app . .
-
-# Copy built dashboard - only the necessary files for standalone deployment
-COPY --from=dashboard-build --chown=app:app /app/dashboard/.next/standalone ./dashboard/
-COPY --from=dashboard-build --chown=app:app /app/dashboard/.next/static ./dashboard/.next/static/
-COPY --from=dashboard-build --chown=app:app /app/dashboard/public ./dashboard/public/
 
 # Create directories with proper permissions
 RUN mkdir -p /app/data /app/logs && \
