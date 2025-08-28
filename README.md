@@ -50,8 +50,8 @@ GET /weeks?action=last_week    # Прошлая неделя
 
 ### 📚 Расписание
 ```
-GET /groups/ПИ-20/schedules/current           # Текущее расписание группы
-GET /groups/ПИ-20/schedules?week=15          # Расписание на 15-ю неделю
+GET /groups/90002495/schedules/current           # Текущее расписание группы
+GET /groups/90002495/schedules?week=15          # Расписание на 15-ю неделю
 ```
 
 ## 🛠️ Разработка
@@ -93,23 +93,13 @@ isort --check-only .
 bandit -r . -x tests/
 ```
 
-## 🏗️ CI/CD
-
-Автоматическая сборка и деплой через GitHub Actions!
-
-**Что происходит при пуше:**
-1. ✅ Тесты и линтеры (pytest, black, isort)
-2. ✅ Проверка безопасности (bandit)
-3. ✅ Сборка multi-stage Docker образа
-4. ✅ Загрузка на GitHub Container Registry (ghcr.io)
-
 ## 📁 Структура
 
 ```
 medusa-backend/
 ├── 🐳 Dockerfile              # Multi-stage Docker конфиг (backend + dashboard)
 ├── 🔧 docker-compose.yml      # Продакшен запуск
-├── ⚙️  pyproject.toml          # Конфигурация проекта и инструментов
+├── ⚙️ pyproject.toml          # Конфигурация проекта и инструментов
 ├── 📦 requirements.txt        # Python зависимости
 ├── 🧪 tests/                  # Тесты с pytest
 ├── 🐍 main.py                 # Точка входа FastAPI
@@ -170,7 +160,7 @@ docker-compose up -d
 
 # Проверяем состояние
 docker-compose ps
-docker-compose logs medusa
+docker-compose logs medusa-backend
 ```
 
 **Готовый образ:** `ghcr.io/shizamuru-dev/medusa-backend:latest`
@@ -194,4 +184,4 @@ MIT - делай что хочешь! 🎉
 
 ---
 
-**Сделано с ❤️ для студентов БГУ**
+**Сделано с ❤️ для студентов БелГУ**

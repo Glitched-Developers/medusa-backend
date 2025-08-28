@@ -23,15 +23,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import init_database
 from routes import router
 from tasks import schedule_update_task
+from version import get_version
 
 # Initialize the logger
 logger = setup_logging("INFO")
 
 # FastAPI application instance with metadata
+print(get_version())
 app = FastAPI(
     title="Medusa Backend API",
     description="RESTful API for BSU class schedules management",
-    version="1.0.0",
+    version=get_version(),
     docs_url="/docs",
     redoc_url="/redoc"
 )

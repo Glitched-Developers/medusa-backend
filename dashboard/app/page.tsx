@@ -112,7 +112,7 @@ export default function ApiStatusPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-4">
-            <h1 className="text-4xl font-bold text-foreground">API Status Dashboard</h1>
+            <h1 className="text-4xl font-bold text-foreground">API Dashboard</h1>
             <Button 
               onClick={handleRefresh} 
               variant="outline" 
@@ -124,7 +124,7 @@ export default function ApiStatusPage() {
               {isRefreshing ? 'Обновление...' : 'Обновить'}
             </Button>
           </div>
-          <p className="text-muted-foreground text-lg">Мониторинг состояния API для управления расписанием BSU</p>
+          <p className="text-muted-foreground text-lg">Мониторинг состояния API</p>
         </div>
 
         {error && (
@@ -162,9 +162,6 @@ export default function ApiStatusPage() {
                   </p>
                   <p>
                     <span className="font-medium">Версия:</span> {apiInfo.version}
-                  </p>
-                  <p>
-                    <span className="font-medium">Описание:</span> {apiInfo.description}
                   </p>
                   {apiInfo.git && (
                     <>
@@ -214,7 +211,7 @@ export default function ApiStatusPage() {
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                    <ExternalLink className="h-3 w-3" />
+                    <ExternalLink className="h-3 w-3"  onClick={() => open("https://localhost:8080/"+ key)}/>
                     Открыть
                   </Button>
                 </div>
@@ -232,13 +229,13 @@ export default function ApiStatusPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Swagger UI</span>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => open("https://localhost:8080/docs#")}>
                   /docs
                 </Button>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">ReDoc</span>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => open("https://localhost:8080/redoc")}>
                   /redoc
                 </Button>
               </div>
@@ -252,15 +249,15 @@ export default function ApiStatusPage() {
             <CardContent className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                Управление расписанием групп
+                Полученеи рассписания групп
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                Получение информации о неделях
+                Получение кода недели
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                RESTful API архитектура
+                REST API архитектура
               </div>
             </CardContent>
           </Card>
