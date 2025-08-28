@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/libs/apt/lists/*
 
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -60,7 +60,7 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/libs/apt/lists/*
 
 # Install Node.js 20 and enable pnpm
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \

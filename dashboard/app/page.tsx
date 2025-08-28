@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Clock, ExternalLink, Server, Database, FileText, AlertCircle, RefreshCw } from "lucide-react"
 import { useState, useEffect } from "react"
-import { apiClient, type ApiStats } from "@/lib/api"
+import { apiClient, type ApiStats } from "@/libs/api"
 
 export default function ApiStatusPage() {
   const [apiInfo, setApiInfo] = useState<ApiStats | null>(null)
