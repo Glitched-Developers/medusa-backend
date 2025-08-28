@@ -1,6 +1,7 @@
-# Simplified Dockerfile for debugging Next.js build issues
+# Multi-stage build for Medusa Backend (FastAPI) + Dashboard (Next.js)
+# Fixed version with proper file copying and module resolution
 
-# Stage 1: Python dependencies (minimal)
+# Stage 1: Build Python dependencies
 FROM python:3.12-slim AS python-deps
 
 ENV PYTHONUNBUFFERED=1 \
@@ -16,81 +17,97 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Stage 2: Dashboard (debug version)
+# Stage 2: Build Next.js Dashboard
 FROM node:20-alpine AS dashboard-build
-
-WORKDIR /app
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy entire dashboard directory at once
-COPY dashboard/ ./dashboard/
+# Set working directory and copy package files first
 WORKDIR /app/dashboard
-
-# Debug: Show what we have
-RUN echo "=== Dashboard directory structure ===" && \
-    find . -type f -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.json" | head -20
-
-RUN echo "=== Checking lib directory ===" && \
-    ls -la lib/ || echo "lib directory missing"
-
-RUN echo "=== Checking tsconfig paths ===" && \
-    cat tsconfig.json
+COPY dashboard/package.json dashboard/pnpm-lock.yaml ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Try building with more verbose output
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm run build || (echo "Build failed, showing more debug info:" && \
-    echo "=== node_modules/@types existence ===" && \
-    ls -la node_modules/@types/ | head -10 && \
-    echo "=== Final attempt with --verbose ===" && \
-    pnpm run build --verbose)
+# Copy ALL source files - this ensures lib/ and other directories are included
+COPY dashboard ./
 
-# Stage 3: Production
+# Debug: Verify files are copied correctly
+RUN echo "=== Files after copy ===" && \
+    ls -la && \
+    echo "=== lib directory contents ===" && \
+    ls -la lib/ && \
+    echo "=== tsconfig.json ===" && \
+    cat tsconfig.json
+
+# Build the application
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm run build
+
+# Stage 3: Production runtime
 FROM python:3.12-slim
+
+LABEL maintainer="shizamuru-dev" \
+      description="Medusa Backend + Dashboard - BSU Schedule API with UI" \
+      version="2.0.0"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
+    NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
     BACKEND_PORT=8080 \
     DASHBOARD_PORT=3000
 
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     corepack enable
 
+# Create non-root user
 RUN groupadd --gid 1001 app && \
     useradd --uid 1001 --gid app --shell /bin/bash --create-home app
 
+# Copy Python virtual environment
 COPY --from=python-deps /opt/venv /opt/venv
 
+# Set working directory and copy backend
 WORKDIR /app
 COPY --chown=app:app . .
 
-# Try copying built dashboard
+# Copy built dashboard - only the necessary files for standalone deployment
 COPY --from=dashboard-build --chown=app:app /app/dashboard/.next/standalone ./dashboard/
 COPY --from=dashboard-build --chown=app:app /app/dashboard/.next/static ./dashboard/.next/static/
 COPY --from=dashboard-build --chown=app:app /app/dashboard/public ./dashboard/public/
 
-RUN mkdir -p /app/data /app/logs && chown -R app:app /app/data /app/logs
+# Create directories with proper permissions
+RUN mkdir -p /app/data /app/logs && \
+    chown -R app:app /app/data /app/logs
+
+# Copy and set up startup script
 COPY --chown=app:app start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
+# Switch to non-root user
 USER app
+
+# Expose ports
 EXPOSE $BACKEND_PORT $DASHBOARD_PORT
 
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:${BACKEND_PORT}/docs && \
         curl -f http://localhost:${DASHBOARD_PORT} || exit 1
 
+# Start both services
 CMD ["/app/start.sh"]
