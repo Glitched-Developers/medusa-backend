@@ -45,7 +45,6 @@ export class ApiClient {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Failed to fetch API stats:', error);
       // Возвращаем заглушку в случае ошибки
       return {
         status: 'ERROR',

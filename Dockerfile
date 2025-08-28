@@ -44,6 +44,10 @@ RUN pnpm run build
 # Stage 5: Production runtime
 FROM python:3.12-slim AS production
 
+# Accept build-time version argument
+ARG APP_VERSION
+ENV APP_VERSION=${APP_VERSION}
+
 LABEL maintainer="shizamuru-dev" \
       description="Medusa Backend + Dashboard - BSU Schedule API with UI" \
       version="2.0.0"

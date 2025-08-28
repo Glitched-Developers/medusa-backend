@@ -22,6 +22,11 @@ def get_git_version() -> str:
     Returns:
         str: Version string based on Git state
     """
+    # Check for environment variable first (for Docker containers)
+    env_version = os.environ.get('APP_VERSION')
+    if env_version:
+        return env_version
+        
     try:
         # Check if we're in a Git repository
         if not os.path.exists('.git') and not _find_git_repo():

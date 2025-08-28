@@ -29,7 +29,6 @@ from version import get_version
 logger = setup_logging("INFO")
 
 # FastAPI application instance with metadata
-print(get_version())
 app = FastAPI(
     title="Medusa Backend API",
     description="RESTful API for BSU class schedules management",

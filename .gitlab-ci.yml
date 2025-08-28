@@ -42,9 +42,12 @@ build:
   before_script:
     - echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin
   script:
-    - echo "Building Docker image..."
-    - docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .
-    - docker build -t $DOCKER_IMAGE_NAME:latest .
+    - echo "Getting version from Git..."
+    - apk add --no-cache git
+    - export VERSION=$(git describe --tags --dirty --always 2>/dev/null || echo "v1.0.0-${CI_COMMIT_SHORT_SHA}")
+    - echo "Building Docker image with version: $VERSION"
+    - docker build --build-arg APP_VERSION=$VERSION -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .
+    - docker build --build-arg APP_VERSION=$VERSION -t $DOCKER_IMAGE_NAME:latest .
     - echo "Pushing to GitHub Container Registry..."
     - docker push $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
     - docker push $DOCKER_IMAGE_NAME:latest
