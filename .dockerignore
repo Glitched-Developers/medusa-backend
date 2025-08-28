@@ -2,6 +2,10 @@
 Dockerfile*
 .dockerignore
 
+# Node
+dashboard/node_modules
+dashboard/.next
+
 # Python
 __pycache__/
 *.py[cod]

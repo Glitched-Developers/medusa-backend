@@ -7,6 +7,9 @@ __pycache__/
 # C extensions
 *.so
 
+dashboard/node_modules
+dashboard/.next
+
 # Distribution / packaging
 .Python
 build/
