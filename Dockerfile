@@ -1,7 +1,7 @@
 # Multi-stage build for Medusa Backend (FastAPI) + Dashboard (Next.js)
 # Fixed version with proper file copying and module resolution
-COPY . /app
-WORKDIR /app
+COPY . ./app
+WORKDIR ./app
 # Stage 1: Build Python dependencies
 FROM python:3.12-slim AS python-deps
 
@@ -28,7 +28,7 @@ FROM node:20-alpine AS dashboard-build
 RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
 
 # Set working directory and copy package files first
-WORKDIR /app/dashboard
+WORKDIR ./app/dashboard
 
 RUN pnpm install --frozen-lockfile
 
@@ -69,7 +69,7 @@ RUN groupadd --gid 1001 app && \
 COPY --from=python-deps /opt/venv /opt/venv
 
 # Set working directory and copy backend
-WORKDIR /app
+WORKDIR ./app
 COPY --chown=app:app . .
 
 # Create directories with proper permissions
