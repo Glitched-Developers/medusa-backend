@@ -148,8 +148,10 @@ def get_version() -> str:
         str: Application version string
     """
     global _cached_version
-    if _cached_version is None:
-        _cached_version = get_git_version()
+    # Always refresh version in development when dirty
+    current_version = get_git_version()
+    if _cached_version is None or current_version.endswith('-dirty'):
+        _cached_version = current_version
     return _cached_version
 
 

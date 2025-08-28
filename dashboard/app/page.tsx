@@ -210,8 +210,13 @@ export default function ApiStatusPage() {
                       <p className="text-sm text-muted-foreground font-mono">{path}</p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                    <ExternalLink className="h-3 w-3"  onClick={() => open("https://localhost:8080/"+ key)}/>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2 bg-transparent"
+                    onClick={() => window.open(`http://localhost:8080${path}`, '_blank')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
                     Открыть
                   </Button>
                 </div>
@@ -229,13 +234,13 @@ export default function ApiStatusPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Swagger UI</span>
-                <Button variant="outline" size="sm" onClick={() => open("https://localhost:8080/docs#")}>
+                <Button variant="outline" size="sm" onClick={() => window.open("http://localhost:8080/docs", '_blank')}>
                   /docs
                 </Button>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">ReDoc</span>
-                <Button variant="outline" size="sm" onClick={() => open("https://localhost:8080/redoc")}>
+                <Button variant="outline" size="sm" onClick={() => window.open("http://localhost:8080/redoc", '_blank')}>
                   /redoc
                 </Button>
               </div>
@@ -249,7 +254,7 @@ export default function ApiStatusPage() {
             <CardContent className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                Полученеи рассписания групп
+                Получение расписания групп
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="h-4 w-4 text-green-500" />
