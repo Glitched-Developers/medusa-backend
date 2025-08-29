@@ -1,6 +1,6 @@
 # 🐍 Medusa Backend + Dashboard
 
-> Твой умный помощник для расписания БГУ с веб-интерфейсом. Больше никаких скучных таблиц!
+> Your smart assistant for BSU schedule with web interface. No more boring tables!
 
 [![Python](https://img.shields.io/badge/python-v3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
@@ -8,180 +8,182 @@
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg)](https://www.sqlalchemy.org/)
 
-## 🎯 Что это?
+[🇷🇺 Russian version](README_RUS.md)
 
-FastAPI бэкенд + Next.js dashboard для получения расписания БГУ с автоматическими обновлениями и удобным веб-интерфейсом. Всё в одном Docker контейнере!
+## 🎯 What is this?
 
-## ✨ Фишки
+FastAPI backend + Next.js dashboard for getting BSU schedule with automatic updates and convenient web interface. All in one Docker container!
 
-- 🚀 **Быстрый API** на FastAPI  
-- 🎨 **Веб-интерфейс** на Next.js с Tailwind CSS
-- 🤖 **Автообновления** расписания в фоне
-- 📊 **Умные недели** (текущая/следующая/предыдущая)
-- 🏫 **По группам** - каждой группе свое расписание
-- 💾 **SQLAlchemy + SQLite** - современная ORM и надежная база
-- 🐳 **Docker** - всё в одном контейнере, готовый образ на GHCR
-- 🔒 **Безопасность** - multi-stage сборка, non-root пользователь
-- 📁 **Постоянные данные** - volume для базы данных
+## ✨ Features
 
-## 🚀 Быстрый старт
+- 🚀 **Fast API** powered by FastAPI  
+- 🎨 **Web interface** built with Next.js and Tailwind CSS
+- 🤖 **Auto-updates** schedule in background
+- 📊 **Smart weeks** (current/next/previous)
+- 🏫 **Group-based** - each group has its own schedule
+- 💾 **SQLAlchemy + SQLite** - modern ORM and reliable database
+- 🐳 **Docker** - everything in one container, ready image on GHCR
+- 🔒 **Security** - multi-stage build, non-root user
+- 📁 **Persistent data** - volume for database
+
+## 🚀 Quick Start
 
 ```bash
-# Клонируем
+# Clone repository
 git clone https://github.com/shizamuru-dev/medusa-backend
 cd medusa-backend
 
-# Запускаем готовый образ
+# Run ready image
 docker-compose up
 ```
 
-Готово! 
-- **API** доступно на http://localhost:8080 📡
-- **Dashboard** доступно на http://localhost:3000 🎨
+Done! 
+- **API** available at http://localhost:8080 📡
+- **Dashboard** available at http://localhost:3000 🎨
 
 ## 📡 API Endpoints
 
-### 🗓️ Недели
+### 🗓️ Weeks
 ```
-GET /weeks?action=this_week    # Текущая неделя
-GET /weeks?action=next_week    # Следующая неделя  
-GET /weeks?action=last_week    # Прошлая неделя
-```
-
-### 📚 Расписание
-```
-GET /groups/90002495/schedules/current           # Текущее расписание группы
-GET /groups/90002495/schedules?week=15          # Расписание на 15-ю неделю
+GET /weeks?action=this_week    # Current week
+GET /weeks?action=next_week    # Next week  
+GET /weeks?action=last_week    # Previous week
 ```
 
-## 🛠️ Разработка
+### 📚 Schedule
+```
+GET /groups/90002495/schedules/current           # Current group schedule
+GET /groups/90002495/schedules?week=15          # Schedule for 15th week
+```
 
-### Без Docker
+## 🛠️ Development
+
+### Without Docker
 ```bash
-# Виртуальная среда
+# Virtual environment
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Зависимости
+# Dependencies
 pip install -r requirements.txt
 
-# Запуск
+# Run
 python main.py
 ```
 
-### С Docker (рекомендуется)
+### With Docker (recommended)
 ```bash
-# Для разработки (локальная сборка)
+# For development (local build)
 docker-compose -f docker-compose.dev.yml up --build
 
-# Для продакшена (готовый образ)
+# For production (ready image)
 docker-compose up
 ```
 
-## 🧪 Тестирование
+## 🧪 Testing
 
 ```bash
-# Тесты
+# Tests
 pytest
 
-# С покрытием и подробностями
+# With coverage and details
 pytest --cov=. --cov-report=html --cov-report=xml --verbose
 
-# Качество кода
+# Code quality
 black --check .
 isort --check-only .
 bandit -r . -x tests/
 ```
 
-## 📁 Структура
+## 📁 Structure
 
 ```
 medusa-backend/
-├── 🐳 Dockerfile              # Multi-stage Docker конфиг (backend + dashboard)
-├── 🔧 docker-compose.yml      # Продакшен запуск
-├── ⚙️ pyproject.toml          # Конфигурация проекта и инструментов
-├── 📦 requirements.txt        # Python зависимости
-├── 🧪 tests/                  # Тесты с pytest
-├── 🐍 main.py                 # Точка входа FastAPI
-├── 📁 data/                   # Данные базы (volume)
-├── 🎨 dashboard/              # Next.js веб-интерфейс
+├── 🐳 Dockerfile              # Multi-stage Docker config (backend + dashboard)
+├── 🔧 docker-compose.yml      # Production setup
+├── ⚙️ pyproject.toml          # Project and tools configuration
+├── 📦 requirements.txt        # Python dependencies
+├── 🧪 tests/                  # Tests with pytest
+├── 🐍 main.py                 # FastAPI entry point
+├── 📁 data/                   # Database data (volume)
+├── 🎨 dashboard/              # Next.js web interface
 │   ├── app/                   # Next.js App Router
-│   ├── components/            # React компоненты
-│   ├── lib/                   # API клиент и утилиты
-│   ├── package.json           # Node.js зависимости
-│   └── next.config.mjs        # Next.js конфигурация
-├── 📚 api/                    # API модули
-├── 📚 database/               # Работа с БД (SQLAlchemy)
-├── 📚 models/                 # SQLAlchemy модели
-├── 📚 routes/                 # API маршруты
-├── 📚 tasks/                  # Фоновые задачи
-├── 📚 utils/                  # Утилиты
-├── 📚 hash_utils/             # Работа с хешами
-└── 📚 logger/                 # Логирование
+│   ├── components/            # React components
+│   ├── lib/                   # API client and utilities
+│   ├── package.json           # Node.js dependencies
+│   └── next.config.mjs        # Next.js configuration
+├── 📚 api/                    # API modules
+├── 📚 database/               # Database work (SQLAlchemy)
+├── 📚 models/                 # SQLAlchemy models
+├── 📚 routes/                 # API routes
+├── 📚 tasks/                  # Background tasks
+├── 📚 utils/                  # Utilities
+├── 📚 hash_utils/             # Hash utilities
+└── 📚 logger/                 # Logging
 ```
 
-## 🛡️ Конфигурация
+## 🛡️ Configuration
 
-### Порты и сеть
-- **API порт**: 8080 (FastAPI backend)
-- **Dashboard порт**: 3000 (Next.js frontend)
-- **Хост**: 0.0.0.0 (доступ снаружи)
+### Ports and Network
+- **API port**: 8080 (FastAPI backend)
+- **Dashboard port**: 3000 (Next.js frontend)
+- **Host**: 0.0.0.0 (external access)
 
-### База данных
-- **Тип**: SQLite с SQLAlchemy ORM
-- **Расположение**: `/app/data/Schedules.db` (внутри контейнера)
-- **Volume**: `medusa_data` для постоянного хранения
+### Database
+- **Type**: SQLite with SQLAlchemy ORM
+- **Location**: `/app/data/Schedules.db` (inside container)
+- **Volume**: `medusa_data` for persistent storage
 
-### Безопасность
-- Non-root пользователь (UID:GID 1000:1000)
-- Multi-stage Docker сборка
-- Health checks каждые 30 секунд
+### Security
+- Non-root user (UID:GID 1000:1000)
+- Multi-stage Docker build
+- Health checks every 30 seconds
 
-> **Примечание**: Для разработки можно создать `.env` файл с дополнительными настройками.
+> **Note**: For development, you can create a `.env` file with additional settings.
 
-## 🚀 Деплой
+## 🚀 Deployment
 
-### Локально
+### Local
 ```bash
-# Готовый образ (рекомендуется)
+# Ready image (recommended)
 docker-compose up
 
-# Или с локальной сборкой для разработки
+# Or with local build for development
 git clone https://github.com/shizamuru-dev/medusa-backend
 cd medusa-backend
 docker-compose up --build
 ```
 
-### На сервере
+### On Server
 ```bash
-# Создаем docker-compose.yml с готовым образом
+# Create docker-compose.yml with ready image
 wget https://raw.githubusercontent.com/shizamuru-dev/medusa-backend/master/docker-compose.yml
 docker-compose up -d
 
-# Проверяем состояние
+# Check status
 docker-compose ps
 docker-compose logs medusa-backend
 ```
 
-**Готовый образ:** `ghcr.io/shizamuru-dev/medusa-backend:latest`
+**Ready image:** `ghcr.io/shizamuru-dev/medusa-backend:latest`
 
-### Мониторинг
-- **API документация**: http://localhost:8080/docs
-- **Health check**: http://localhost:8080/docs (автоматически каждые 30с)
-- **Dashboard интерфейс**: http://localhost:3000
-- **Логи**: `docker-compose logs -f medusa`
+### Monitoring
+- **API documentation**: http://localhost:8080/docs
+- **Health check**: http://localhost:8080/docs (automatically every 30s)
+- **Dashboard interface**: http://localhost:3000
+- **Logs**: `docker-compose logs -f medusa`
 
-## 🤝 Как помочь
+## 🤝 Contributing
 
-1. Форкни репозиторий
-2. Создай ветку для фичи
-3. Делай коммиты с ❤️
-4. Отправляй merge request
+1. Fork the repository
+2. Create a feature branch
+3. Make commits with ❤️
+4. Submit a merge request
 
-## 📜 Лицензия
+## 📜 License
 
-MIT - делай что хочешь! 🎉
+MIT - do whatever you want! 🎉
 
 ---
 
-**Сделано с ❤️ для студентов БелГУ**
+**Made with ❤️ for BelSU students**
