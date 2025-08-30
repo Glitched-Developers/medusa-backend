@@ -15,7 +15,6 @@ from utils import week_validator
 HEADERS = {
     'content-type': "application/x-www-form-urlencoded; charset=UTF-8",
     'origin': "https://bsuedu.ru",
-    'referer': "https://bsuedu.ru/bsu/education/schedule/groups/index.php?group=90002493",
     'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     'x-requested-with': "XMLHttpRequest",
 }
@@ -23,9 +22,9 @@ HEADERS = {
 
 class WeekActions(enum.Enum):
     """Enumeration of available week selection actions."""
-    THIS_WEEK = "this"
-    NEXT_WEEK = "next"
-    LAST_WEEK = "last"
+    THIS_WEEK = "this_week"
+    NEXT_WEEK = "next_week"
+    LAST_WEEK = "last_week"
 
 
 class Lesson(TypedDict, total=False):

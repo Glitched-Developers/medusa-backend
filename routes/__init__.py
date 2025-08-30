@@ -111,9 +111,9 @@ async def get_server_stats():
     description="Calculate week number based on action (current/next/previous week)"
 )
 async def get_weeks(
-    action: WeekActions = Query(
-        WeekActions.THIS_WEEK, 
-        description="Week action to perform (this_week, next_week, last_week)"
+    action: str = Query(
+        "this", 
+        description="Week action to perform (this, next, last)"
     ),
     week: Optional[int] = Query(
         None, 
@@ -127,7 +127,7 @@ async def get_weeks(
     It can return the current week, next week, or previous week number.
 
     Args:
-        action: Week action to perform (this_week, next_week, last_week)
+        action: Week action to perform (this, next, last)
         week: Base week number for relative calculations (optional)
 
     Returns:
@@ -139,11 +139,19 @@ async def get_weeks(
             - 500: Internal server error for unexpected issues
 
     Example:
-        GET /weeks?action=this_week -> {"week": "15"}
-        GET /weeks?action=next_week&week=10 -> {"week": "11"}
+        GET /weeks?action=this -> {"week": "15"}
+        GET /weeks?action=next&week=2508202531082025 -> {"week": "2608202531082025"}
     """
     try:
-        week_number = await fetch_week(action=action, week=week or 0)
+        # Convert string action to enum
+        action_mapping = {
+            "this": WeekActions.THIS_WEEK,
+            "next": WeekActions.NEXT_WEEK,
+            "last": WeekActions.LAST_WEEK
+        }
+        
+        week_action = action_mapping.get(action, WeekActions.THIS_WEEK)
+        week_number = await fetch_week(action=week_action, week=week or 0)
         return WeekResponse(week=str(week_number))
     except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
