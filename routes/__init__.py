@@ -115,7 +115,7 @@ async def get_weeks(
         "this", 
         description="Week action to perform (this, next, last)"
     ),
-    week: Optional[int] = Query(
+    week: Optional[str] = Query(
         None, 
         description="Base week number for calculations (optional)"
     )
@@ -151,7 +151,7 @@ async def get_weeks(
         }
         
         week_action = action_mapping.get(action, WeekActions.THIS_WEEK)
-        week_number = await fetch_week(action=week_action, week=week or 0)
+        week_number = await fetch_week(action=week_action, week=week or "0")
         return WeekResponse(week=str(week_number))
     except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
@@ -203,10 +203,10 @@ async def get_current_schedule(
 )
 async def get_schedules(
     group_id: int = Path(..., description="BSU group ID", examples=[12345]),
-    week: Optional[int] = Query(
+    week: Optional[str] = Query(
         None, 
         description="Academic week number (defaults to current week)", 
-        examples=[15]
+        examples=["0109202507092025"]
     )
 ) -> ScheduleResponse:
     """

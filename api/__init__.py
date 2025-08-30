@@ -46,7 +46,7 @@ class ScheduleResult(TypedDict):
     schedule: Dict[str, List[Dict[str, Any]]]
 
 
-async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week: int = 0) -> int:
+async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> int:
     """
     Fetch current week number based on the specified action.
 
@@ -328,7 +328,7 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
 
     return result
 
-async def fetch_schedule(week: Optional[int] = None, group: int = 90002493) -> ScheduleResult:
+async def fetch_schedule(week: Optional[str] = None, group: int = 90002493) -> ScheduleResult:
     """
     Fetch and parse the schedule for a specific week and group.
 
@@ -340,7 +340,7 @@ async def fetch_schedule(week: Optional[int] = None, group: int = 90002493) -> S
         Dictionary with parsed schedule data and metadata
     """
     if week is None:
-        week = await fetch_week()
+        week = str(await fetch_week())
 
     week_validator(week)
 

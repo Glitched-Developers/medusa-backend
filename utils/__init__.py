@@ -15,7 +15,7 @@ from datetime import datetime
 import calendar
 
 
-def week_validator(week: int) -> bool:
+def week_validator(week) -> bool:
     """
     Validate BSU week code format and date ranges.
     
@@ -53,12 +53,16 @@ def week_validator(week: int) -> bool:
     """
     week_str = str(week)
 
-    # Validate 16-digit length requirement
-    if len(week_str) != 16:
+    # Validate length requirement (15-16 digits allowed)
+    if len(week_str) < 15 or len(week_str) > 16:
         raise HTTPException(
             status_code=400, 
-            detail="Invalid week code, must be exactly 16 digits long"
+            detail="Invalid week code, must be 15-16 digits long"
         )
+    
+    # Pad with leading zero if 15 digits
+    if len(week_str) == 15:
+        week_str = "0" + week_str
 
     try:
         # Parse date components from week code
