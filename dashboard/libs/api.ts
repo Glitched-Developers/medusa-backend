@@ -24,14 +24,14 @@ export class ApiClient {
     this.baseUrl = baseUrl || 
       process.env.API_BASE_URL || 
       (typeof window !== 'undefined' 
-        ? `${window.location.protocol}//${window.location.hostname}:8080`  // Используем текущий домен
+        ? `${window.location.protocol}//${window.location.hostname}`  // Используем текущий домен
         : 'http://medusa-backend:8080'  // Server-side rendering in Docker
       );
   }
 
   async getStats(): Promise<ApiStats> {
     try {
-      const response = await fetch(`${this.baseUrl}/stats`, {
+      const response = await fetch(`http://localhost:8080/stats`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
