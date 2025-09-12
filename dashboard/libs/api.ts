@@ -20,11 +20,11 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    // Приоритет: параметр > переменная окружения > автоопределение
+    // Приоритет: параметр > переменная окружения > автоопределение из текущего URL
     this.baseUrl = baseUrl || 
       process.env.API_BASE_URL || 
       (typeof window !== 'undefined' 
-        ? 'http://localhost:8080'  // Browser
+        ? `${window.location.protocol}//${window.location.hostname}:8080`  // Используем текущий домен
         : 'http://medusa-backend:8080'  // Server-side rendering in Docker
       );
   }
@@ -36,6 +36,8 @@ export class ApiClient {
         headers: {
           'Content-Type': 'application/json',
         },
+        // Добавляем timeout
+        signal: AbortSignal.timeout(10000), // 10 секунд
       });
 
       if (!response.ok) {
@@ -45,7 +47,8 @@ export class ApiClient {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Возвращаем заглушку в случае ошибки
+      console.error('Failed to fetch API stats:', error);
+      // Возвращаем заглушку с деталями ошибки
       return {
         status: 'ERROR',
         timestamp: new Date().toISOString(),

@@ -44,7 +44,11 @@ app.add_middleware(
         "http://localhost:3000",  # Next.js default development port
         "http://127.0.0.1:3000",  # Alternative localhost
         "http://localhost:3001",  # Alternative port
-        "http://127.0.0.1:3001"   # Alternative localhost and port
+        "http://127.0.0.1:3001",  # Alternative localhost and port
+        "http://localhost:8080",  # Backend server itself
+        "http://127.0.0.1:8080",  # Alternative backend URL
+        "http://localhost:8000",  # Alternative backend port
+        "http://127.0.0.1:8000"   # Alternative backend URL and port
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

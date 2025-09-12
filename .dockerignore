@@ -62,6 +62,9 @@ docs/
 .gitlab-ci.yml
 .github/
 
+.claude
+env.bat
+
 # Tests
 tests/
 pytest.ini
@@ -74,6 +77,9 @@ pytest.ini
 
 # Important: DO NOT exclude dashboard/libs - it contains essential files for Next.js build
 !dashboard/libs/
+
+# Important: DO NOT exclude startup script
+!start.sh
 
 # Database files (if not needed in container)
 *.db

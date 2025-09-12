@@ -5,5 +5,8 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "env": {
+      "ANTHROPIC_MODEL": "glm-4.5"
   }
 }

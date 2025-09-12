@@ -1,0 +1,130 @@
+# HTTP/2 support
+http2 on;
+
+# Rate limiting zones
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=dashboard:10m rate=20r/s;
+
+# Upstream servers
+upstream backend {
+    server localhost:8080;
+}
+
+upstream dashboard {
+    server localhost:3000;
+}
+
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name bsu.example.com;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/bsu.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/bsu.example.com/privkey.pem;
+
+    # Security headers
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+
+    # Dashboard (Next.js)
+    location / {
+        limit_req zone=dashboard burst=10 nodelay;
+        proxy_pass http://dashboard;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
+    }
+
+    # Weeks endpoint
+    location /weeks {
+        limit_req zone=api burst=5 nodelay;
+        proxy_pass http://backend/weeks;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+        proxy_connect_timeout 10s;
+    }
+
+    # Groups endpoint
+    location /groups/ {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://backend/groups/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+        proxy_connect_timeout 10s;
+    }
+
+    # API endpoints (FastAPI)
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://backend/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+        proxy_connect_timeout 10s;
+    }
+
+    # API docs (FastAPI)
+    location /docs {
+        limit_req zone=api burst=5 nodelay;
+        proxy_pass http://backend/docs;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # OpenAPI schema
+    location /openapi.json {
+        limit_req zone=api burst=5 nodelay;
+        proxy_pass http://backend/openapi.json;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Health check endpoint
+    location /health {
+        proxy_pass http://backend/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        access_log off;
+    }
+
+    # Static assets caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri @dashboard;
+    }
+
+    location @dashboard {
+        proxy_pass http://dashboard;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

@@ -7,6 +7,10 @@ import { CheckCircle, Clock, ExternalLink, Server, Database, FileText, AlertCirc
 import { useState, useEffect } from "react"
 import { apiClient, type ApiStats } from "@/libs/api"
 
+const getBaseUrl = () => {
+  return apiClient['baseUrl'] || (typeof window !== 'undefined' ? window.location.origin : '')
+}
+
 export default function ApiStatusPage() {
   const [apiInfo, setApiInfo] = useState<ApiStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -214,7 +218,7 @@ export default function ApiStatusPage() {
                     variant="outline" 
                     size="sm" 
                     className="gap-2 bg-transparent"
-                    onClick={() => window.open(`http://localhost:8080${path}`, '_blank')}
+                    onClick={() => window.open(`${apiClient['baseUrl']}${path}`, '_blank')}
                   >
                     <ExternalLink className="h-3 w-3" />
                     Открыть
@@ -234,13 +238,13 @@ export default function ApiStatusPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Swagger UI</span>
-                <Button variant="outline" size="sm" onClick={() => window.open("http://localhost:8080/docs", '_blank')}>
+                <Button variant="outline" size="sm" onClick={() => window.open(`${apiClient['baseUrl']}/docs`, '_blank')}>
                   /docs
                 </Button>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">ReDoc</span>
-                <Button variant="outline" size="sm" onClick={() => window.open("http://localhost:8080/redoc", '_blank')}>
+                <Button variant="outline" size="sm" onClick={() => window.open(`${apiClient['baseUrl']}/redoc`, '_blank')}>
                   /redoc
                 </Button>
               </div>
