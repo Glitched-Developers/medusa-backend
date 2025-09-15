@@ -274,11 +274,21 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
         # Get lesson type
         lesson_type = type_cell.get_text(strip=True)
         if "лек" in lesson_type:
-            lesson_type = "Лекция"
+            lesson_type = "лекция"
         elif "пр.з" in lesson_type:
-            lesson_type = "Практика"
+            lesson_type = "пз"
         elif "лаб" in lesson_type:
-            lesson_type = "Лабораторная"
+            lesson_type = "лабораторная"
+        elif "пер" in lesson_type:
+            lesson_type = "пересдача"
+        elif "конс" in lesson_type:
+            lesson_type = "консультация"
+        elif "экз." in lesson_type:
+            lesson_type = "экзамен"
+        elif "зач." in lesson_type:
+            lesson_type = "зачёт"
+        elif "дифф.зач." in lesson_type:
+            lesson_type = "дифф"
         else:
             lesson_type = lesson_type.capitalize()
 

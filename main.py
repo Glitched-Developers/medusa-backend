@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import init_database
 from routes import router
 from tasks import schedule_update_task
-from version import get_version
+from utils.version import get_version
 
 # Initialize the logger
 logger = setup_logging("INFO")

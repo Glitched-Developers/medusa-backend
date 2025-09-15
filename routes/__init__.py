@@ -20,7 +20,7 @@ import datetime
 import tasks
 from api import fetch_week, fetch_schedule, WeekActions
 from models import WeekResponse, ScheduleResponse
-from version import get_version, get_git_commit, get_git_branch
+from utils.version import get_version, get_git_commit, get_git_branch
 
 # Initialize router with tags for API documentation
 router = APIRouter(
