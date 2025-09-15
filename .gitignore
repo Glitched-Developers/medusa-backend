@@ -128,7 +128,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env.bat
+C:\Users\mmiha\PycharmProjects\medusa-backend\env.bat
 .claude
 env/
 venv/
