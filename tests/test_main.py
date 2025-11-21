@@ -60,8 +60,10 @@ class TestMainFunction:
         """Test that main function initializes correctly"""
         from main import main
         
-        mock_init_db.return_value = AsyncMock()
-        mock_serve.return_value = AsyncMock()
+        # Configure mocks to be awaitable
+        mock_init_db.return_value = None
+        mock_serve.return_value = None
+        mock_schedule_task.return_value = None
         
         await main()
         
@@ -89,8 +91,10 @@ class TestMainFunction:
         """Test that main function uses custom port from environment"""
         from main import main
         
-        mock_init_db.return_value = AsyncMock()
-        mock_serve.return_value = AsyncMock()
+        # Configure mocks to be awaitable
+        mock_init_db.return_value = None
+        mock_serve.return_value = None
+        mock_schedule_task.return_value = None
         
         await main()
         

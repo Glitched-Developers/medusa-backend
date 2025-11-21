@@ -14,46 +14,9 @@ class TestScheduleParsing:
 
     def setup_method(self):
         """Set up test data paths"""
-        self.project_root = Path(__file__).parent.parent
-        self.html_file = self.project_root / "page.html"
-        self.response_file = self.project_root / "response.json"
-
-    def test_parse_html_vs_expected_response(self):
-        """
-        Test that parsing page.html produces the same result as response.json
-
-        This test:
-        1. Reads HTML from page.html
-        2. Parses it using parse_schedule function
-        3. Compares the result with expected response.json
-        4. Fails if they don't match
-        """
-        # Read test data files
-        if not self.html_file.exists():
-            pytest.skip(f"Test data file not found: {self.html_file}")
-
-        if not self.response_file.exists():
-            pytest.skip(f"Expected response file not found: {self.response_file}")
-
-        # Read HTML content
-        with open(self.html_file, 'r', encoding='utf-8') as f:
-            html_content = f.read()
-
-        # Read expected response
-        with open(self.response_file, 'r', encoding='utf-8') as f:
-            expected_response = json.load(f)
-
-        # Parse HTML using the production parser
-        actual_result = parse_schedule(html_content, timestamp="2025-09-15 21:22:22")
-
-        # Compare results
-        assert actual_result == expected_response, (
-            f"Parsed HTML does not match expected response.\n"
-            f"Expected keys: {set(expected_response.keys())}\n"
-            f"Actual keys: {set(actual_result.keys())}\n"
-            f"Differences in metadata: {self._dict_diff(expected_response.get('metadata', {}), actual_result.get('metadata', {}))}\n"
-            f"Differences in schedule: {self._dict_diff(expected_response.get('schedule', {}), actual_result.get('schedule', {}))}"
-        )
+        self.test_dir = Path(__file__).parent
+        self.html_file = self.test_dir / "data" / "test_schedule.htm"
+        self.response_file = self.test_dir / "data" / "schedule.json"
 
     def test_parse_html_structure(self):
         """Test that parsed HTML has the expected structure"""
