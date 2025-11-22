@@ -67,6 +67,21 @@ async def test_schedule_integration():
     expected_data_no_ts = expected_data.copy()
     expected_data_no_ts["metadata"] = expected_data["metadata"].copy()
     expected_data_no_ts["metadata"].pop("timestamp", None)
+
+    # Normalize keys to remove "(сегодня)" or "(завтра)" which might differ based on run date
+    def normalize_schedule_keys(data):
+        if "schedule" not in data:
+            return data
+        new_schedule = {}
+        for key, value in data["schedule"].items():
+            # Remove (сегодня), (завтра) and trailing spaces
+            clean_key = key.split("(")[0].strip()
+            new_schedule[clean_key] = value
+        data["schedule"] = new_schedule
+        return data
+
+    fetched_result_no_ts = normalize_schedule_keys(fetched_result_no_ts)
+    expected_data_no_ts = normalize_schedule_keys(expected_data_no_ts)
     
     assert fetched_result_no_ts == expected_data_no_ts, (
         "Fetched remote data does not match expected JSON (excluding timestamp).\n"
