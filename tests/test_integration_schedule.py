@@ -44,6 +44,11 @@ async def test_schedule_integration():
     print("✓ Local parsing matches expected JSON")
 
     # 3. Fetch real data and compare
+    import os
+    if os.environ.get("CI") or os.environ.get("GITLAB_CI"):
+        print("Skipping remote data fetching in CI environment to avoid network issues and external dependency flakiness")
+        return
+
     print("Step 2: Testing remote data fetching...")
     # Group: 90002493, Week: 1711202523112025
     group_id = 90002493
