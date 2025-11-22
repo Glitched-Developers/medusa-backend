@@ -133,5 +133,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ---
 
 <div align="center">
-  <sub>Made with ❤️ for BelSU students</sub>
+  <sub>Made with ❤️ for BSU students</sub>
 </div>
