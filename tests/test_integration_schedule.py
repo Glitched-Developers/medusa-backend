@@ -1,5 +1,6 @@
 import json
 import pytest
+import os
 from pathlib import Path
 from api import parse_schedule, fetch_schedule
 
@@ -44,9 +45,8 @@ async def test_schedule_integration():
     print("✓ Local parsing matches expected JSON")
 
     # 3. Fetch real data and compare
-    import os
-    if os.environ.get("CI") or os.environ.get("GITLAB_CI"):
-        print("Skipping remote data fetching in CI environment to avoid network issues and external dependency flakiness")
+    if (os.environ.get("CI") or os.environ.get("GITLAB_CI")) and not os.environ.get("BSU_PROXY"):
+        print("Skipping remote data fetching in CI environment (no BSU_PROXY configured)")
         return
 
     print("Step 2: Testing remote data fetching...")

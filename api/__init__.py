@@ -3,6 +3,7 @@ API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
 from datetime import datetime
 from typing import Dict, List, Optional, Any, TypedDict
+import os
 
 import enum
 import httpx
@@ -61,7 +62,8 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> i
         ConnectionError: If there's an issue with the API connection or data is invalid
     """
     try:
-        async with httpx.AsyncClient() as client:
+        proxy = os.environ.get("BSU_PROXY")
+        async with httpx.AsyncClient(proxy=proxy) as client:
             response = await client.get(
                 f"https://bsuedu.ru/bsu/education/schedule/week/week_json.php?week={week}&act={action.value}",
                 headers=HEADERS,
@@ -355,7 +357,8 @@ async def fetch_schedule(week: Optional[str] = None, group: int = 90002493) -> S
     week_validator(week)
 
     try:
-        async with httpx.AsyncClient() as client:
+        proxy = os.environ.get("BSU_PROXY")
+        async with httpx.AsyncClient(proxy=proxy) as client:
             response = await client.post(
                 f"https://bsuedu.ru/bsu/education/schedule/groups/show_schedule.php?group={group}&week={week}",
                 headers=HEADERS,
