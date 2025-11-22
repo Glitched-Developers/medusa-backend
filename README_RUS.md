@@ -1,187 +1,137 @@
-# 🐍 Medusa Backend + Dashboard
+# 🐍 Medusa Backend
 
-> Твой умный помощник для расписания БГУ с веб-интерфейсом. Больше никаких скучных таблиц!
+> **Твой умный API помощник для расписания БГУ.**  
+> Быстрый, надежный и простой в использовании.
 
-[![Python](https://img.shields.io/badge/python-v3.12+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js-15+-black.svg)](https://nextjs.org)
-[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
-[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg)](https://www.sqlalchemy.org/)
+[![Python](https://img.shields.io/badge/python-v3.12+-blue.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg?style=flat-square)](https://www.sqlalchemy.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](LICENSE)
 
-## 🎯 Что это?
+[🇬🇧 English version](README.md)
 
-FastAPI бэкенд + Next.js dashboard для получения расписания БГУ с автоматическими обновлениями и удобным веб-интерфейсом. Всё в одном Docker контейнере!
+---
 
-## ✨ Фишки
+## 🎯 Обзор
 
-- 🚀 **Быстрый API** на FastAPI  
-- 🎨 **Веб-интерфейс** на Next.js с Tailwind CSS
-- 🤖 **Автообновления** расписания в фоне
-- 📊 **Умные недели** (текущая/следующая/предыдущая)
-- 🏫 **По группам** - каждой группе свое расписание
-- 💾 **SQLAlchemy + SQLite** - современная ORM и надежная база
-- 🐳 **Docker** - всё в одном контейнере, готовый образ на GHCR
-- 🔒 **Безопасность** - multi-stage сборка, non-root пользователь
-- 📁 **Постоянные данные** - volume для базы данных
+**Medusa Backend** — это высокопроизводительный REST API на **FastAPI**, созданный для получения, парсинга и выдачи расписания занятий **Белгородского государственного университета (НИУ "БелГУ")**.
+
+Он берет на себя всю сложность парсинга университетского расписания, сохраняет его в локальной базе данных для быстрого доступа и поддерживает актуальность с помощью фоновых задач. Идеально подходит для создания собственных приложений, ботов или интеграций с расписанием.
+
+## ✨ Ключевые особенности
+
+- 🚀 **Высокая производительность**: Работает на **FastAPI** для молниеносных ответов.
+- 🤖 **Автообновления**: Фоновые задачи автоматически синхронизируют расписание.
+- 📊 **Умные недели**: Интеллектуальная обработка текущей, следующей и предыдущей учебных недель.
+- 🏫 **Ориентированность на группы**: Отдельное управление расписанием для каждой студенческой группы.
+- 💾 **Надежное хранение**: Использует **SQLAlchemy** + **SQLite** для надежного сохранения данных.
+- 🐳 **Готов к Docker**: Готовая к продакшену контейнеризация с multi-stage сборкой.
+- 🔒 **Безопасность**: Запускается от имени non-root пользователя для повышенной безопасности.
 
 ## 🚀 Быстрый старт
 
+### С использованием Docker (Рекомендуется)
+
+Самый простой способ запустить Medusa Backend — использовать Docker Compose.
+
 ```bash
-# Клонируем
+# 1. Клонируйте репозиторий
 git clone https://github.com/shizamuru-dev/medusa-backend
 cd medusa-backend
 
-# Запускаем готовый образ
-docker-compose up
+# 2. Запустите сервис
+docker-compose up -d
 ```
 
-Готово! 
-- **API** доступно на http://localhost:8080 📡
-- **Dashboard** доступно на http://localhost:3000 🎨
+Готово! API теперь доступно по адресу **http://localhost:8080**.
 
-## 📡 API Endpoints
+### Ручная установка
 
-### 🗓️ Недели
-```
-GET /weeks?action=this_week    # Текущая неделя
-GET /weeks?action=next_week    # Следующая неделя  
-GET /weeks?action=last_week    # Прошлая неделя
-```
+Если вы предпочитаете запускать локально без Docker:
 
-### 📚 Расписание
-```
-GET /groups/90002495/schedules/current           # Текущее расписание группы
-GET /groups/90002495/schedules?week=15          # Расписание на 15-ю неделю
-```
-
-## 🛠️ Разработка
-
-### Без Docker
 ```bash
-# Виртуальная среда
+# 1. Создайте виртуальное окружение
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Зависимости
+# 2. Установите зависимости
 pip install -r requirements.txt
 
-# Запуск
+# 3. Запустите сервер
 python main.py
 ```
 
-### С Docker (рекомендуется)
-```bash
-# Для разработки (локальная сборка)
-docker-compose -f docker-compose.dev.yml up --build
+## 📡 Документация API
 
-# Для продакшена (готовый образ)
-docker-compose up
-```
+Medusa Backend предоставляет интерактивную документацию API "из коробки".
 
-## 🧪 Тестирование
+- **Swagger UI**: [http://localhost:8080/docs](http://localhost:8080/docs) - Исследуйте и тестируйте эндпоинты интерактивно.
+- **ReDoc**: [http://localhost:8080/redoc](http://localhost:8080/redoc) - Альтернативный вид документации.
 
-```bash
-# Тесты
-pytest
+### Основные эндпоинты
 
-# С покрытием и подробностями
-pytest --cov=. --cov-report=html --cov-report=xml --verbose
+| Метод | Эндпоинт | Описание |
+| :--- | :--- | :--- |
+| `GET` | `/weeks?action=this_week` | Получить информацию о текущей учебной неделе |
+| `GET` | `/groups/{id}/schedules/current` | Получить текущее расписание группы |
+| `GET` | `/groups/{id}/schedules?week=15` | Получить расписание на конкретную неделю |
+| `GET` | `/stats` | Получить статистику системы |
 
-# Качество кода
-black --check .
-isort --check-only .
-bandit -r . -x tests/
-```
+## 🛠️ Разработка
 
-## 📁 Структура
+### Структура проекта
 
 ```
 medusa-backend/
-├── 🐳 Dockerfile              # Multi-stage Docker конфиг (backend + dashboard)
-├── 🔧 docker-compose.yml      # Продакшен запуск
-├── ⚙️ pyproject.toml          # Конфигурация проекта и инструментов
-├── 📦 requirements.txt        # Python зависимости
-├── 🧪 tests/                  # Тесты с pytest
-├── 🐍 main.py                 # Точка входа FastAPI
-├── 📁 data/                   # Данные базы (volume)
-├── 🎨 dashboard/              # Next.js веб-интерфейс
-│   ├── app/                   # Next.js App Router
-│   ├── components/            # React компоненты
-│   ├── lib/                   # API клиент и утилиты
-│   ├── package.json           # Node.js зависимости
-│   └── next.config.mjs        # Next.js конфигурация
-├── 📚 api/                    # API модули
-├── 📚 database/               # Работа с БД (SQLAlchemy)
-├── 📚 models/                 # SQLAlchemy модели
-├── 📚 routes/                 # API маршруты
-├── 📚 tasks/                  # Фоновые задачи
-├── 📚 utils/                  # Утилиты
-├── 📚 hash_utils/             # Работа с хешами
-└── 📚 logger/                 # Логирование
+├── 🐳 Dockerfile           # Конфиг Docker образа для продакшена
+├── 🔧 docker-compose.yml   # Настройка Docker Compose
+├── 🐍 main.py              # Точка входа приложения
+├── 📚 api/                 # Логика API и сервисы
+├── 📚 routes/              # Определения маршрутов API
+├── 📚 models/              # Модели базы данных
+├── 📚 database/            # Подключение к БД и сессии
+├── 📚 tasks/               # Фоновые задачи обновления
+├── 📚 utils/               # Вспомогательные утилиты
+└── 🧪 tests/               # Набор тестов Pytest
+```
+
+### Запуск тестов
+
+Убедитесь, что ваш код работает корректно с помощью полного набора тестов.
+
+```bash
+# Запустить все тесты
+pytest
+
+# Запустить с отчетом о покрытии
+pytest --cov=. --cov-report=html
 ```
 
 ## 🛡️ Конфигурация
 
-### Порты и сеть
-- **API порт**: 8080 (FastAPI backend)
-- **Dashboard порт**: 3000 (Next.js frontend)
-- **Хост**: 0.0.0.0 (доступ снаружи)
+Приложение настроено для работы "из коробки", но вы можете настроить его:
 
-### База данных
-- **Тип**: SQLite с SQLAlchemy ORM
-- **Расположение**: `/app/data/Schedules.db` (внутри контейнера)
-- **Volume**: `medusa_data` для постоянного хранения
-
-### Безопасность
-- Non-root пользователь (UID:GID 1000:1000)
-- Multi-stage Docker сборка
-- Health checks каждые 30 секунд
-
-> **Примечание**: Для разработки можно создать `.env` файл с дополнительными настройками.
-
-## 🚀 Деплой
-
-### Локально
-```bash
-# Готовый образ (рекомендуется)
-docker-compose up
-
-# Или с локальной сборкой для разработки
-git clone https://github.com/shizamuru-dev/medusa-backend
-cd medusa-backend
-docker-compose up --build
-```
-
-### На сервере
-```bash
-# Создаем docker-compose.yml с готовым образом
-wget https://raw.githubusercontent.com/shizamuru-dev/medusa-backend/master/docker-compose.yml
-docker-compose up -d
-
-# Проверяем состояние
-docker-compose ps
-docker-compose logs medusa-backend
-```
-
-**Готовый образ:** `ghcr.io/shizamuru-dev/medusa-backend:latest`
-
-### Мониторинг
-- **API документация**: http://localhost:8080/docs
-- **Health check**: http://localhost:8080/docs (автоматически каждые 30с)
-- **Dashboard интерфейс**: http://localhost:3000
-- **Логи**: `docker-compose logs -f medusa`
+- **Порт**: По умолчанию `8080`. Установите переменную окружения `PORT` для изменения.
+- **База данных**: Данные хранятся в `/app/data/Schedules.db` (Docker volume `medusa_data`).
+- **Интервал обновлений**: Обновления расписания запускаются автоматически в фоне.
 
 ## 🤝 Как помочь
 
-1. Форкни репозиторий
-2. Создай ветку для фичи
-3. Делай коммиты с ❤️
-4. Отправляй merge request
+Мы рады вашему вкладу! Не стесняйтесь отправлять Pull Request.
+
+1. Форкните проект
+2. Создайте ветку для вашей фичи (`git checkout -b feature/AmazingFeature`)
+3. Закоммитьте изменения (`git commit -m 'Add some AmazingFeature'`)
+4. Запушьте ветку (`git push origin feature/AmazingFeature`)
+5. Откройте Pull Request
 
 ## 📜 Лицензия
 
-MIT - делай что хочешь! 🎉
+Распространяется под лицензией MIT. Смотрите файл `LICENSE` для получения дополнительной информации.
 
 ---
 
-**Сделано с ❤️ для студентов БелГУ**
+<div align="center">
+  <sub>Сделано с ❤️ для студентов БелГУ</sub>
+</div>
