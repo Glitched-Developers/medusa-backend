@@ -7,7 +7,7 @@ name = "medusa-backend"
 version = "1.0.0"
 description = "RESTful API for BSU class schedules management"
 authors = [
-    {name = "shizamuru-dev", email = "your-email@example.com"},
+    {name = "shizamuru-dev", email = "shizamuru@glitched.network"},
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
