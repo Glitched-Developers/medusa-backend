@@ -1,8 +1,7 @@
 services:
   medusa:
     image: ghcr.io/shizamuru-dev/medusa-backend:latest
-    # if need build from source
-    #build: .
+    # build: .
     container_name: medusa
     ports:
       - "8080:8080"  # Backend API
@@ -10,6 +9,7 @@ services:
       - PORT=8080
     volumes:
       - medusa_data:/app/data
+      - medusa_logs:/app/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/docs"]
@@ -19,9 +19,18 @@ services:
       start_period: 45s
     networks:
       - medusa-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
 volumes:
   medusa_data:
+  medusa_logs:
 
 networks:
   medusa-network:

@@ -2,9 +2,7 @@
 Dockerfile*
 .dockerignore
 
-# Node
-dashboard/node_modules
-dashboard/.next
+.idea
 
 # Python
 __pycache__/

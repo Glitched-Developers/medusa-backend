@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Migrated project configuration fully to `pyproject.toml` (PEP 518/621).
+- Moved runtime dependencies from `requirements.txt` to `pyproject.toml`.
+- Moved `pytest` configuration from `pytest.ini` to `pyproject.toml`.
+- Removed obsolete configuration files (`requirements.txt`, `.flake8`, `pytest.ini`).
 - Removed Next.js dashboard to focus on Backend API functionality.
 - Updated project structure and cleaned up unused files.
 - Refactored tests for better stability and coverage.
