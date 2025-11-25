@@ -75,22 +75,3 @@ class TestScheduleParsing:
             f"Custom timestamp should be preserved. Expected: {custom_timestamp}, "
             f"Got: {result['metadata']['timestamp']}"
         )
-
-    def _dict_diff(self, dict1: dict, dict2: dict) -> dict:
-        """Helper method to find differences between two dictionaries"""
-        diff = {}
-
-        # Keys in dict1 but not in dict2
-        for key in set(dict1.keys()) - set(dict2.keys()):
-            diff[f"missing_in_second_{key}"] = dict1[key]
-
-        # Keys in dict2 but not in dict1
-        for key in set(dict2.keys()) - set(dict1.keys()):
-            diff[f"missing_in_first_{key}"] = dict2[key]
-
-        # Values that differ
-        for key in set(dict1.keys()) & set(dict2.keys()):
-            if dict1[key] != dict2[key]:
-                diff[f"different_{key}"] = {"expected": dict1[key], "actual": dict2[key]}
-
-        return diff
