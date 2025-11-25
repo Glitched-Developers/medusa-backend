@@ -18,8 +18,7 @@ test:
       - .cache/pip
   script:
     - pip install --cache-dir .cache/pip --upgrade pip
-    - pip install --cache-dir .cache/pip -r requirements.txt
-    - pip install --cache-dir .cache/pip pytest pytest-asyncio httpx flake8 black
+    - pip install --cache-dir .cache/pip ".[dev]" flake8
     - echo "Running tests..."
     - pytest tests/ -v
     - echo "Running code quality checks..."

@@ -56,7 +56,7 @@ python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 2. Install dependencies
-pip install -r requirements.txt
+pip install .
 
 # 3. Run the server
 python main.py
