@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "medusa-backend"
-version = "1.0.4"
+version = "1.0.5"
 description = "RESTful API for BSU class schedules management"
 authors = [
     {name = "shizamuru-dev", email = "shizamuru@glitched.network"},
@@ -45,7 +45,7 @@ dev = [
 ]
 
 [tool.bumpversion]
-current_version = "1.0.4"
+current_version = "1.0.5"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 commit = true
