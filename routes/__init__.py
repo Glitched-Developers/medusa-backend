@@ -5,7 +5,7 @@ This module defines the REST API endpoints for the Medusa Backend application.
 It provides endpoints for fetching week calculations and BSU class schedules.
 
 Available endpoints:
-- GET /: Redirect to external frontend application
+- GET /: Redirect to API documentation
 - GET /stats: Get server status as JSON API
 - GET /weeks: Get week number calculations
 - GET /groups/{group_id}/schedules/current: Get current schedule for a group
@@ -34,20 +34,17 @@ router = APIRouter(
 
 @router.get(
     "/",
-    summary="Redirect to frontend",
-    description="Redirect to the frontend application"
+    summary="Redirect to docs",
+    description="Redirect to the API documentation"
 )
-async def redirect_to_frontend():
+async def redirect_to_docs():
     """
-    Redirect to the frontend application.
-    
-    You can modify this to redirect to your Node.js frontend URL.
-    For now, it redirects to the API docs.
+    Redirect to the API documentation.
     
     Returns:
-        RedirectResponse: Redirect to frontend application
+        RedirectResponse: Redirect to API docs
     """
-    return RedirectResponse(url="http://localhost:3000", status_code=302)
+    return RedirectResponse(url="/docs", status_code=302)
 
 
 @router.get(

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2025-11-28
+- Remove legacy frontend references from nginx.conf and routes
+
 ## 2025-11-25
 - moving to pyproject; optimizing version control and docker file; (34d673b) - shizamuru-dev
 
