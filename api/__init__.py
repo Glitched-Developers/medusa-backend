@@ -1,7 +1,8 @@
 """
 API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
-from loguru import logger
+import logging
+import traceback
 from datetime import datetime
 from typing import Dict, List, Optional, Any, TypedDict
 import os
@@ -81,8 +82,8 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> i
 
             return data[0]
     except (httpx.HTTPError, IndexError, ValueError) as e:
-        logger.error(f"Failed to fetch week data: {e}")
-        raise ConnectionError(f"Failed to fetch week data: {str(e)}") from e
+        logger.error(f"Failed to fetch week data: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        raise ConnectionError(f"Failed to fetch week data: {repr(e)}") from e
 
 def extract_subject_name(name_cell) -> str:
     """
@@ -379,5 +380,5 @@ async def fetch_schedule(week: Optional[str] = None, group: int = 90002493) -> S
                 timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
     except (httpx.HTTPError, IndexError, ValueError) as e:
-        logger.error(f"Failed to fetch schedule data: {e}")
-        raise ConnectionError(f"Failed to fetch week data: {str(e)}") from e
+        logger.error(f"Failed to fetch schedule data: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        raise ConnectionError(f"Failed to fetch week data: {repr(e)}") from e

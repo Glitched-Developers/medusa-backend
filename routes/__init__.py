@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, Query, Path
 from fastapi.responses import RedirectResponse
 from typing import Optional
 import datetime
+import traceback
 from loguru import logger
 
 import tasks
@@ -153,10 +154,10 @@ async def get_weeks(
         logger.debug(f"Calculated week: {week_number}")
         return WeekResponse(week=str(week_number))
     except ConnectionError as e:
-        logger.error(f"Connection error in get_weeks: {e}")
+        logger.error(f"Connection error in get_weeks: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.exception(f"Unexpected error in get_weeks: {e}")
+        logger.error(f"Unexpected error in get_weeks: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 @router.get(
@@ -208,9 +209,9 @@ async def get_schedules(
         logger.info(f"Successfully fetched schedule for group {group_id}")
         return ScheduleResponse(schedule=schedule)
     except ConnectionError as e:
-        logger.error(f"Connection error in get_schedules for group {group_id}: {e}")
+        logger.error(f"Connection error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.exception(f"Unexpected error in get_schedules for group {group_id}: {e}")
+        logger.error(f"Unexpected error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
