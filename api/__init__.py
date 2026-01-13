@@ -3,6 +3,7 @@ API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
 import logging
 import traceback
+from loguru import logger
 from datetime import datetime
 from typing import Dict, List, Optional, Any, TypedDict
 import os
