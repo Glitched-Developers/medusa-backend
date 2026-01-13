@@ -1,6 +1,7 @@
 """
 API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
+from loguru import logger
 from datetime import datetime
 from typing import Dict, List, Optional, Any, TypedDict
 import os
@@ -63,9 +64,11 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> i
     """
     try:
         proxy = os.environ.get("BSU_PROXY")
+        url = f"https://bsuedu.ru/bsu/education/schedule/week/week_json.php?week={week}&act={action.value}"
+        logger.debug(f"Fetching week data from: {url}")
         async with httpx.AsyncClient(proxy=proxy) as client:
             response = await client.get(
-                f"https://bsuedu.ru/bsu/education/schedule/week/week_json.php?week={week}&act={action.value}",
+                url,
                 headers=HEADERS,
                 timeout=10
             )
@@ -73,10 +76,12 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> i
             data = response.json()
 
             if not data or not isinstance(data, list):
+                logger.error(f"Invalid data format received from API: {data}")
                 raise ValueError("Invalid data format received from API")
 
             return data[0]
     except (httpx.HTTPError, IndexError, ValueError) as e:
+        logger.error(f"Failed to fetch week data: {e}")
         raise ConnectionError(f"Failed to fetch week data: {str(e)}") from e
 
 def extract_subject_name(name_cell) -> str:
@@ -358,9 +363,11 @@ async def fetch_schedule(week: Optional[str] = None, group: int = 90002493) -> S
 
     try:
         proxy = os.environ.get("BSU_PROXY")
+        url = f"https://bsuedu.ru/bsu/education/schedule/groups/show_schedule.php?group={group}&week={week}"
+        logger.debug(f"Fetching schedule for group {group}, week {week} from: {url}")
         async with httpx.AsyncClient(proxy=proxy) as client:
             response = await client.post(
-                f"https://bsuedu.ru/bsu/education/schedule/groups/show_schedule.php?group={group}&week={week}",
+                url,
                 headers=HEADERS,
                 timeout=10
             )
@@ -372,4 +379,5 @@ async def fetch_schedule(week: Optional[str] = None, group: int = 90002493) -> S
                 timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
     except (httpx.HTTPError, IndexError, ValueError) as e:
+        logger.error(f"Failed to fetch schedule data: {e}")
         raise ConnectionError(f"Failed to fetch week data: {str(e)}") from e

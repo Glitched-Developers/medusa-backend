@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, Query, Path
 from fastapi.responses import RedirectResponse
 from typing import Optional
 import datetime
+from loguru import logger
 
 import tasks
 from api import fetch_week, fetch_schedule, WeekActions
@@ -139,6 +140,7 @@ async def get_weeks(
         GET /weeks?action=next&week=2508202531082025 -> {"week": "2608202531082025"}
     """
     try:
+        logger.info(f"Week calculation request: action={action}, week={week}")
         # Convert string action to enum
         action_mapping = {
             "this": WeekActions.THIS_WEEK,
@@ -148,10 +150,13 @@ async def get_weeks(
         
         week_action = action_mapping.get(action, WeekActions.THIS_WEEK)
         week_number = await fetch_week(action=week_action, week=week or "0")
+        logger.debug(f"Calculated week: {week_number}")
         return WeekResponse(week=str(week_number))
     except ConnectionError as e:
+        logger.error(f"Connection error in get_weeks: {e}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
+        logger.exception(f"Unexpected error in get_weeks: {e}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 @router.get(
@@ -198,10 +203,14 @@ async def get_schedules(
         GET /groups/12345/schedules  # Uses current week
     """
     try:
+        logger.info(f"Schedule request: group_id={group_id}, week={week}")
         schedule = await fetch_schedule(group=group_id, week=week)
+        logger.info(f"Successfully fetched schedule for group {group_id}")
         return ScheduleResponse(schedule=schedule)
     except ConnectionError as e:
+        logger.error(f"Connection error in get_schedules for group {group_id}: {e}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
+        logger.exception(f"Unexpected error in get_schedules for group {group_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
