@@ -5,6 +5,9 @@ services:
     container_name: medusa
     ports:
       - "8080:8080"  # Backend API
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       - PORT=8080
     volumes:
