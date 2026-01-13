@@ -9,6 +9,7 @@ Key Functions:
 - Date range validation and format checking
 - Input sanitization and error handling
 """
+import re
 
 from fastapi import HTTPException
 from datetime import datetime
@@ -140,3 +141,18 @@ def week_validator(week) -> bool:
 
     # All validations passed
     return True
+
+def teacher_name_normalizer(name: str) -> str:
+    """
+    Normalize teacher names by stripping extra spaces and capitalizing properly.
+
+    Args:
+        name (str): Raw teacher name
+
+    Returns:
+        str: Normalized teacher name
+    """
+
+    RE_TEACHER_PREFIX = re.compile(r'^\s*(?:асс\.?\s*преп\.?|преп\.|асс\.)\s*', re.IGNORECASE)
+
+    return RE_TEACHER_PREFIX.sub('', name).strip()

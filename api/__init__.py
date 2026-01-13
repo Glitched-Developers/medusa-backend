@@ -10,7 +10,7 @@ import httpx
 import re
 from bs4 import BeautifulSoup, NavigableString
 
-from utils import week_validator
+from utils import week_validator, teacher_name_normalizer
 
 # HTTP request headers to bypass server restrictions
 HEADERS = {
@@ -306,7 +306,7 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
 
         # Get teacher
         teacher_text = teacher_cell.get_text(strip=True)
-        teacher = re.sub(r'^преп\.', '', teacher_text).strip()
+        teacher = teacher_name_normalizer(teacher_text)
 
         # Get auditory and online information
         auditory = auditory_cell.get_text(strip=True)

@@ -8,7 +8,6 @@ Available endpoints:
 - GET /: Redirect to API documentation
 - GET /stats: Get server status as JSON API
 - GET /weeks: Get week number calculations
-- GET /groups/{group_id}/schedules/current: Get current schedule for a group
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 """
 
@@ -161,37 +160,6 @@ async def get_weeks(
     summary="Get current schedule",
     description="Fetch the current week's schedule for a specific group"
 )
-async def get_current_schedule(
-    group_id: int = Path(..., description="BSU group ID", examples=[12345])
-) -> ScheduleResponse:
-    """
-    Get current schedule for a specific BSU group.
-
-    This endpoint fetches the schedule for the current academic week.
-    It automatically determines the current week and returns the corresponding schedule.
-    The schedule data is automatically updated via background tasks.
-
-    Args:
-        group_id: The BSU group ID for which the schedule is requested
-
-    Returns:
-        ScheduleResponse: JSON response containing the current schedule data
-
-    Raises:
-        HTTPException: 
-            - 503: Service unavailable due to connection errors
-            - 500: Internal server error for unexpected issues
-
-    Example:
-        GET /groups/12345/schedules/current
-    """
-    try:
-        schedule = await tasks.check_schedule_update(group_id)
-        return ScheduleResponse(schedule=schedule)
-    except ConnectionError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 @router.get(
     "/groups/{group_id}/schedules", 
     response_model=ScheduleResponse,
