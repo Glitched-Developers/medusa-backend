@@ -38,7 +38,7 @@ jobs:
           alembic upgrade head
 
       - name: Validate Docker Compose
-        run: ADMIN_API_TOKEN=ci-test-token docker compose config --quiet
+        run: ADMIN_API_TOKEN=ci-test-token docker compose -f examples/docker-compose.yml config --quiet
 
       - name: Check formatting
         run: black --check .
