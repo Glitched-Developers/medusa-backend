@@ -104,10 +104,23 @@ medusa-backend/
 ├── 📚 routes/              # API route definitions
 ├── 📚 models/              # Database models
 ├── 📚 database/            # Database connection & session
+├── 🗃️ migrations/          # Alembic database migrations
 ├── 📚 tasks/               # Background update tasks
 ├── 📚 utils/               # Helper utilities
 └── 🧪 tests/               # Pytest suite
 ```
+
+### Database migrations
+
+Apply the database schema before starting the application:
+
+```bash
+alembic upgrade head
+```
+
+To create a migration after a schema change, run `alembic revision -m
+"describe the change"`. The database URL can be overridden with the
+`DATABASE_URL` environment variable.
 
 ### Running Tests
 
