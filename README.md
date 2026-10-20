@@ -154,6 +154,7 @@ or the token does not match. PostgreSQL startup migrations retry using
 Manual refresh is rate-limited by `ADMIN_REFRESH_RATE_LIMIT` per
 `ADMIN_REFRESH_RATE_WINDOW_SECONDS`. Set `SCHEDULE_UPDATER_ENABLED=false` for
 additional API workers; run the periodic updater in exactly one process.
+Prometheus metrics are available at `GET /metrics`.
 
 ### Running Tests
 

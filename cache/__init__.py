@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from loguru import logger
 from redis.asyncio import Redis
+from metrics import cache_operations
 
 
 class ScheduleCache:
@@ -38,8 +39,10 @@ class ScheduleCache:
     async def get(self, group: int, week: str) -> Optional[dict[str, Any]]:
         try:
             value = await self._get_client().get(self.key(group, week))
+            cache_operations.labels("schedule_get", "hit" if value else "miss").inc()
             return json.loads(value) if value else None
         except Exception as exc:
+            cache_operations.labels("schedule_get", "error").inc()
             logger.warning(f"Redis cache read failed: {exc}")
             return None
 
@@ -48,7 +51,9 @@ class ScheduleCache:
             await self._get_client().set(
                 self.key(group, week), json.dumps(value), ex=self.ttl
             )
+            cache_operations.labels("schedule_set", "success").inc()
         except Exception as exc:
+            cache_operations.labels("schedule_set", "error").inc()
             logger.warning(f"Redis cache write failed: {exc}")
 
     async def get_week(self, action: str, week: str) -> Optional[int]:

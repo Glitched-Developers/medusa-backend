@@ -21,6 +21,7 @@ from loguru import logger
 
 import tasks
 from cache import schedule_cache
+from metrics import api_requests
 from api import fetch_week, fetch_schedule, WeekActions
 from database import save_schedule
 from models import WeekResponse, ScheduleResponse
@@ -244,9 +245,12 @@ async def refresh_schedule(
     try:
         schedule = await fetch_schedule(group=group_id, week=week)
         await save_schedule(group_id, schedule)
+        api_requests.labels("POST", "/groups/{group_id}/schedules/refresh", "200").inc()
         return ScheduleResponse(schedule=schedule)
     except ConnectionError as e:
+        api_requests.labels("POST", "/groups/{group_id}/schedules/refresh", "503").inc()
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
+        api_requests.labels("POST", "/groups/{group_id}/schedules/refresh", "500").inc()
         logger.exception("Failed to refresh schedule for group %s", group_id)
         raise HTTPException(status_code=500, detail=str(e))

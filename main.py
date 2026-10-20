@@ -25,6 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import init_database
 from routes import router
 from tasks import schedule_update_task
+from metrics import metrics_app
 from utils.version import get_version
 
 # Initialize the logger
@@ -73,6 +74,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.mount("/metrics", metrics_app)
     
 async def main():
     """

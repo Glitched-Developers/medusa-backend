@@ -22,6 +22,7 @@ from sqlalchemy import select
 from loguru import logger
 from api import fetch_schedule
 from cache import schedule_cache
+from metrics import schedule_updates
 
 UPDATE_INTERVAL_MINUTES = int(os.getenv("SCHEDULE_UPDATE_INTERVAL_MINUTES", "90"))
 SCHEDULE_FRESHNESS_MINUTES = int(os.getenv("SCHEDULE_FRESHNESS_MINUTES", "45"))
@@ -112,6 +113,7 @@ async def check_schedule_update(force_group: int = None) -> dict:
                         return {}
 
                     await save_schedule(force_group, new_data)
+                    schedule_updates.labels("success").inc()
                     logger.info(f"Updated schedule for group {force_group}")
                     return new_data["schedule"]
                 except Exception as e:
@@ -186,10 +188,12 @@ async def check_schedule_update(force_group: int = None) -> dict:
                             continue
 
                         await save_schedule(group, new_data)
+                        schedule_updates.labels("success").inc()
                         logger.info(f"Updated schedule for group {group}")
                         result[group] = new_data["schedule"]
 
                 except Exception as e:
+                    schedule_updates.labels("error").inc()
                     logger.exception(f"Error processing group {group}: {e}")
 
         except Exception as e:
