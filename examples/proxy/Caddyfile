@@ -1,0 +1,23 @@
+# Medusa reverse-proxy example.
+# Run the backend on 127.0.0.1:8080, or change the upstream below.
+localhost {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+
+    @health path /health
+    respond @health "OK" 200 {
+        close
+        header Content-Type text/plain
+    }
+
+    @root path /
+    redir @root /docs 302
+
+    reverse_proxy 127.0.0.1:8080 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

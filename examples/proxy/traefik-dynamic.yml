@@ -1,0 +1,29 @@
+# Traefik v3 dynamic configuration example.
+
+http:
+  middlewares:
+    security-headers:
+      headers:
+        contentTypeNosniff: true
+        frameDeny: true
+    api-rate-limit:
+      rateLimit:
+        average: 10
+        burst: 20
+
+  routers:
+    medusa:
+      entryPoints:
+        - web
+      rule: Host(`localhost`)
+      middlewares:
+        - security-headers
+        - api-rate-limit
+      service: medusa-backend
+
+  services:
+    medusa-backend:
+      loadBalancer:
+        servers:
+          - url: http://127.0.0.1:8080
+        passHostHeader: true

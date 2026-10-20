@@ -1,0 +1,11 @@
+# Traefik v3 static configuration example.
+# Run the backend on 127.0.0.1:8080, or change the URL in traefik-dynamic.yml.
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  file:
+    filename: /etc/traefik/traefik-dynamic.yml
+    watch: true
