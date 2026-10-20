@@ -29,6 +29,7 @@ dependencies = [
     "loguru>=0.7.0",
     "sqlalchemy[asyncio]>=2.0.40",
     "aiosqlite>=0.21.0",
+    "alembic>=1.15.0",
     "python-dotenv>=1.0.0",
     "redis>=5.2.0",
 ]
