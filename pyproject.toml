@@ -27,10 +27,10 @@ dependencies = [
     "httpx[socks]>=0.28.0",
     "beautifulsoup4>=4.13.0",
     "loguru>=0.7.0",
-    "sqlalchemy>=2.0.40",
+    "sqlalchemy[asyncio]>=2.0.40",
     "aiosqlite>=0.21.0",
-    "xxhash>=3.5.0",
     "python-dotenv>=1.0.0",
+    "redis>=5.2.0",
 ]
 
 [project.optional-dependencies]
@@ -143,4 +143,4 @@ exclude_dirs = ["tests", "venv", ".venv"]
 skips = ["B101"]  # Skip assert_used test
 
 [tool.setuptools.packages.find]
-include = ["api*", "database*", "hash_utils*", "logger*", "models*", "routes*", "tasks*", "utils*"]
+include = ["api*", "cache*", "database*", "logger*", "models*", "routes*", "tasks*", "utils*"]

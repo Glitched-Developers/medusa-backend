@@ -10,6 +10,8 @@ services:
       - 8.8.8.8
     environment:
       - PORT=8080
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_CACHE_TTL=2700
     volumes:
       - medusa_data:/app/data
       - medusa_logs:/app/logs
@@ -31,9 +33,20 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  redis:
+    image: redis:7-alpine
+    container_name: medusa-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - medusa_redis:/data
+    restart: unless-stopped
+    networks:
+      - medusa-network
+
 volumes:
   medusa_data:
   medusa_logs:
+  medusa_redis:
 
 networks:
   medusa-network:

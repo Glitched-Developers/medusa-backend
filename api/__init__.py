@@ -1,6 +1,7 @@
 """
 API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
+
 import logging
 import traceback
 from loguru import logger
@@ -14,18 +15,20 @@ import re
 from bs4 import BeautifulSoup, NavigableString
 
 from utils import week_validator, teacher_name_normalizer
+from cache import schedule_cache
 
 # HTTP request headers to bypass server restrictions
 HEADERS = {
-    'content-type': "application/x-www-form-urlencoded; charset=UTF-8",
-    'origin': "https://bsuedu.ru",
-    'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    'x-requested-with': "XMLHttpRequest",
+    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "origin": "https://bsuedu.ru",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "x-requested-with": "XMLHttpRequest",
 }
 
 
 class WeekActions(enum.Enum):
     """Enumeration of available week selection actions."""
+
     THIS_WEEK = "this_week"
     NEXT_WEEK = "next_week"
     LAST_WEEK = "last_week"
@@ -33,6 +36,7 @@ class WeekActions(enum.Enum):
 
 class Lesson(TypedDict, total=False):
     """Type definition for a lesson entry."""
+
     number: int
     time: str
     type: str
@@ -46,11 +50,12 @@ class Lesson(TypedDict, total=False):
 
 class ScheduleResult(TypedDict):
     """Type definition for the schedule result."""
+
     metadata: Dict[str, str]
     schedule: Dict[str, List[Dict[str, Any]]]
 
 
-async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> int:
+async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int:
     """
     Fetch current week number based on the specified action.
 
@@ -65,15 +70,16 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> i
         ConnectionError: If there's an issue with the API connection or data is invalid
     """
     try:
+        cached = await schedule_cache.get_week(action.value, str(week))
+        if cached is not None:
+            logger.debug(f"Week cache hit for action {action.value}, week {week}")
+            return cached
+
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/week/week_json.php?week={week}&act={action.value}"
         logger.debug(f"Fetching week data from: {url}")
         async with httpx.AsyncClient(proxy=proxy) as client:
-            response = await client.get(
-                url,
-                headers=HEADERS,
-                timeout=10
-            )
+            response = await client.get(url, headers=HEADERS, timeout=10)
             response.raise_for_status()
             data = response.json()
 
@@ -81,10 +87,15 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week = 0) -> i
                 logger.error(f"Invalid data format received from API: {data}")
                 raise ValueError("Invalid data format received from API")
 
-            return data[0]
+            result = data[0]
+            await schedule_cache.set_week(action.value, str(week), result)
+            return result
     except (httpx.HTTPError, IndexError, ValueError) as e:
-        logger.error(f"Failed to fetch week data: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        logger.error(
+            f"Failed to fetch week data: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
         raise ConnectionError(f"Failed to fetch week data: {repr(e)}") from e
+
 
 def extract_subject_name(name_cell) -> str:
     """
@@ -107,11 +118,11 @@ def extract_subject_name(name_cell) -> str:
         # Skip small tags, which usually contain additional info
         if isinstance(content, NavigableString):
             main_text += content.strip()
-        elif content.name != 'small':
+        elif content.name != "small":
             main_text += content.get_text(strip=True)
 
     # Remove parentheses with content, which usually contain EUMKD info
-    main_text = re.sub(r'\(.*?\)', '', main_text)
+    main_text = re.sub(r"\(.*?\)", "", main_text)
     main_text = main_text.strip()
 
     # If there's no text after processing, look for the first <a> tag
@@ -120,9 +131,10 @@ def extract_subject_name(name_cell) -> str:
 
     return main_text
 
+
 def process_day_lessons(lessons: List[Lesson]) -> List[Dict[str, Any]]:
     """
-    Group subgroups of the same subject into one entry, but only if they occur 
+    Group subgroups of the same subject into one entry, but only if they occur
     at the same time and have the same lesson type.
 
     Args:
@@ -166,7 +178,7 @@ def process_day_lessons(lessons: List[Lesson]) -> List[Dict[str, Any]]:
                     "teacher": sub_lesson["teacher"],
                     "auditory": sub_lesson["auditory"],
                     "online": sub_lesson["online"],
-                    "subgroup": subgroup_num
+                    "subgroup": subgroup_num,
                 }
                 main_lesson[f"subgroup_{subgroup_num}"] = sub_data
 
@@ -175,6 +187,7 @@ def process_day_lessons(lessons: List[Lesson]) -> List[Dict[str, Any]]:
     # Sort result by lesson number
     result.sort(key=lambda x: x["number"])
     return result
+
 
 def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult:
     """
@@ -193,12 +206,7 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
     soup = BeautifulSoup(html, "html.parser")
 
     # Use provided metadata
-    result: ScheduleResult = {
-        "metadata": {
-            "timestamp": timestamp
-        },
-        "schedule": {}
-    }
+    result: ScheduleResult = {"metadata": {"timestamp": timestamp}, "schedule": {}}
 
     schedule = {}
     current_day = None
@@ -248,24 +256,24 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
 
             # Get number and time
             number_text = num_cell.get_text(strip=True)
-            num_match = re.search(r'(\d+)', number_text)
+            num_match = re.search(r"(\d+)", number_text)
             number = int(num_match.group(1)) if num_match else 0
             time = time_cell.get_text(strip=True)
 
             # Check for rowspan for future processing
-            rowspan_num = num_cell.get('rowspan')
+            rowspan_num = num_cell.get("rowspan")
             if rowspan_num:
                 current_rowspan = {
-                    'number': number,
-                    'time': time,
-                    'rows': int(rowspan_num)
+                    "number": number,
+                    "time": time,
+                    "rows": int(rowspan_num),
                 }
-                current_rowspan_left = current_rowspan['rows'] - 1
+                current_rowspan_left = current_rowspan["rows"] - 1
         else:
             # This might be a row related to previous pair through rowspan
             if current_rowspan and current_rowspan_left > 0:
-                number = current_rowspan['number']
-                time = current_rowspan['time']
+                number = current_rowspan["number"]
+                time = current_rowspan["time"]
                 current_rowspan_left -= 1
             else:
                 # If not rowspan and no number and time, skip
@@ -307,7 +315,9 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
         # Determine subgroup
         subgroup = None
         name_text = name_cell.get_text(strip=True)
-        subgroup_match = re.search(r'п/г\s*(\d+)', name_text) or re.search(r'(\d+)\s*подгруппа', name_text)
+        subgroup_match = re.search(r"п/г\s*(\d+)", name_text) or re.search(
+            r"(\d+)\s*подгруппа", name_text
+        )
         if subgroup_match:
             subgroup = int(subgroup_match.group(1))
 
@@ -317,8 +327,10 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
 
         # Get auditory and online information
         auditory = auditory_cell.get_text(strip=True)
-        online = "Для студентов с возможностью подключиться он-лайн" in auditory or \
-                 "Для студентов с возможностью подключиться онлайн" in auditory
+        online = (
+            "Для студентов с возможностью подключиться он-лайн" in auditory
+            or "Для студентов с возможностью подключиться онлайн" in auditory
+        )
 
         # Create lesson entry
         lesson: Lesson = {
@@ -327,8 +339,11 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
             "type": lesson_type,
             "name": name.replace("_", ""),
             "teacher": teacher,
-            "auditory": auditory.replace("Для студентов с возможностью подключиться он-лайн", "")
-            .replace("Для студентов с возможностью подключиться онлайн", "").strip(),
+            "auditory": auditory.replace(
+                "Для студентов с возможностью подключиться он-лайн", ""
+            )
+            .replace("Для студентов с возможностью подключиться онлайн", "")
+            .strip(),
             "online": online,
             "key": f"{number}_{time}_{name}_{lesson_type}",
         }
@@ -347,7 +362,10 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
 
     return result
 
-async def fetch_schedule(week: Optional[str] = None, group: int = 90002493) -> ScheduleResult:
+
+async def fetch_schedule(
+    week: Optional[str] = None, group: int = 90002493
+) -> ScheduleResult:
     """
     Fetch and parse the schedule for a specific week and group.
 
@@ -363,23 +381,27 @@ async def fetch_schedule(week: Optional[str] = None, group: int = 90002493) -> S
 
     week_validator(week)
 
+    cached = await schedule_cache.get(group, week)
+    if cached is not None:
+        logger.debug(f"Schedule cache hit for group {group}, week {week}")
+        return cached
+
     try:
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/groups/show_schedule.php?group={group}&week={week}"
         logger.debug(f"Fetching schedule for group {group}, week {week} from: {url}")
         async with httpx.AsyncClient(proxy=proxy) as client:
-            response = await client.post(
-                url,
-                headers=HEADERS,
-                timeout=10
-            )
+            response = await client.post(url, headers=HEADERS, timeout=10)
             response.raise_for_status()
             data = response.text
 
-            return parse_schedule(
-                data,
-                timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            result = parse_schedule(
+                data, timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
+            await schedule_cache.set(group, week, result)
+            return result
     except (httpx.HTTPError, IndexError, ValueError) as e:
-        logger.error(f"Failed to fetch schedule data: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        logger.error(
+            f"Failed to fetch schedule data: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
         raise ConnectionError(f"Failed to fetch week data: {repr(e)}") from e
