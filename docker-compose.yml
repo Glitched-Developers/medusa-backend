@@ -13,6 +13,11 @@ services:
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/Schedules.db}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_CACHE_TTL=2700
+      - SCHEDULE_UPDATE_INTERVAL_MINUTES=${SCHEDULE_UPDATE_INTERVAL_MINUTES:-90}
+      - SCHEDULE_FRESHNESS_MINUTES=${SCHEDULE_FRESHNESS_MINUTES:-45}
+      - BSU_RETRIES=${BSU_RETRIES:-3}
+      - BSU_RETRY_DELAY=${BSU_RETRY_DELAY:-1}
+      - BSU_TIMEOUT=${BSU_TIMEOUT:-10}
     depends_on:
       redis:
         condition: service_healthy

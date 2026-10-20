@@ -4,8 +4,9 @@ API module for fetching and parsing class schedules from the bsuedu.ru website.
 
 import logging
 import traceback
+import asyncio
 from loguru import logger
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any, TypedDict
 import os
 
@@ -24,6 +25,9 @@ HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest",
 }
+UPSTREAM_TIMEOUT = float(os.getenv("BSU_TIMEOUT", "10"))
+UPSTREAM_RETRIES = int(os.getenv("BSU_RETRIES", "3"))
+RETRY_DELAY = float(os.getenv("BSU_RETRY_DELAY", "1"))
 
 
 class WeekActions(enum.Enum):
@@ -78,10 +82,17 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/week/week_json.php?week={week}&act={action.value}"
         logger.debug(f"Fetching week data from: {url}")
-        async with httpx.AsyncClient(proxy=proxy) as client:
-            response = await client.get(url, headers=HEADERS, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+        for attempt in range(UPSTREAM_RETRIES):
+            try:
+                async with httpx.AsyncClient(proxy=proxy) as client:
+                    response = await client.get(url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT)
+                    response.raise_for_status()
+                    data = response.json()
+                break
+            except httpx.HTTPError:
+                if attempt == UPSTREAM_RETRIES - 1:
+                    raise
+                await asyncio.sleep(RETRY_DELAY * (2**attempt))
 
             if not data or not isinstance(data, list):
                 logger.error(f"Invalid data format received from API: {data}")
@@ -201,7 +212,7 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
         Dictionary with schedule data and metadata
     """
     if timestamp is None:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     soup = BeautifulSoup(html, "html.parser")
 
@@ -390,13 +401,20 @@ async def fetch_schedule(
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/groups/show_schedule.php?group={group}&week={week}"
         logger.debug(f"Fetching schedule for group {group}, week {week} from: {url}")
-        async with httpx.AsyncClient(proxy=proxy) as client:
-            response = await client.post(url, headers=HEADERS, timeout=10)
-            response.raise_for_status()
-            data = response.text
+        for attempt in range(UPSTREAM_RETRIES):
+            try:
+                async with httpx.AsyncClient(proxy=proxy) as client:
+                    response = await client.post(url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT)
+                    response.raise_for_status()
+                    data = response.text
+                break
+            except httpx.HTTPError:
+                if attempt == UPSTREAM_RETRIES - 1:
+                    raise
+                await asyncio.sleep(RETRY_DELAY * (2**attempt))
 
             result = parse_schedule(
-                data, timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                data, timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             )
             await schedule_cache.set(group, week, result)
             return result

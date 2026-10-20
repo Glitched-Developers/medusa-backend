@@ -14,13 +14,17 @@ Key Features:
 
 import asyncio
 import json
-from datetime import datetime, timedelta
+import os
+from datetime import datetime, timedelta, timezone
 
 from database import engine, save_schedule, table
 from sqlalchemy import select
 from loguru import logger
 from api import fetch_schedule
 from cache import schedule_cache
+
+UPDATE_INTERVAL_MINUTES = int(os.getenv("SCHEDULE_UPDATE_INTERVAL_MINUTES", "90"))
+SCHEDULE_FRESHNESS_MINUTES = int(os.getenv("SCHEDULE_FRESHNESS_MINUTES", "45"))
 
 
 async def check_schedule_update(force_group: int = None) -> dict:
@@ -73,11 +77,11 @@ async def check_schedule_update(force_group: int = None) -> dict:
             # Unpack database row values
             group_id, data_json, timestamp = old_data
 
-            stored_time = datetime.fromisoformat(timestamp)
-            time_difference = datetime.now() - stored_time
+            stored_time = datetime.fromisoformat(timestamp).replace(tzinfo=timezone.utc)
+            time_difference = datetime.now(timezone.utc) - stored_time
 
             # Use cached data if within 45-minute validity period
-            if time_difference < timedelta(minutes=45):
+            if time_difference < timedelta(minutes=SCHEDULE_FRESHNESS_MINUTES):
                 logger.info(
                     f"Using cached data for group {force_group}, last updated {stored_time}"
                 )
@@ -148,12 +152,12 @@ async def check_schedule_update(force_group: int = None) -> dict:
                         # Unpack database row values
                         group_id, data_json, timestamp = old_data
 
-                        stored_time = datetime.fromisoformat(timestamp)
-                        current_time = datetime.now()
+                        stored_time = datetime.fromisoformat(timestamp).replace(tzinfo=timezone.utc)
+                        current_time = datetime.now(timezone.utc)
                         time_difference = current_time - stored_time
 
                         # Skip if data is fresh (within 45-minute cache period)
-                        if time_difference < timedelta(minutes=45):
+                        if time_difference < timedelta(minutes=SCHEDULE_FRESHNESS_MINUTES):
                             logger.info(
                                 f"Using cached data for group {group}, last updated {stored_time}"
                             )
@@ -221,8 +225,6 @@ async def schedule_update_task():
         >>> # Started automatically in main.py
         >>> asyncio.create_task(schedule_update_task())
     """
-    UPDATE_INTERVAL_MINUTES = 90
-
     while True:
         try:
             logger.info("Starting scheduled schedule update")
