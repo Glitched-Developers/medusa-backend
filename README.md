@@ -19,6 +19,19 @@
 
 It handles the complexity of parsing the university's schedule, stores it in a local database for quick access, and keeps it up-to-date with background tasks. Perfect for building your own schedule apps, bots, or integrations.
 
+## Caching
+
+Schedules and academic week numbers are cached in Redis for 45 minutes. Docker
+Compose starts Redis automatically. Configure an external Redis instance with:
+
+```env
+REDIS_URL=redis://localhost:6379/0
+REDIS_CACHE_TTL=2700
+```
+
+If Redis is temporarily unavailable, the application falls back to the upstream
+source and continues serving requests.
+
 ## ✨ Key Features
 
 - 🚀 **High Performance**: Powered by **FastAPI** for lightning-fast responses.
