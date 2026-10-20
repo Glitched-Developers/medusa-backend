@@ -22,7 +22,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 # Database configuration
 meta = MetaData()
-DATABASE_URL = "sqlite+aiosqlite:///./data/Schedules.db"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite+aiosqlite:///./data/Schedules.db",
+)
 
 # Async SQLite engine for concurrent operations
 engine = create_async_engine(DATABASE_URL, echo=False)
@@ -59,8 +62,11 @@ async def init_database() -> None:
     # Ensure data directory exists
     os.makedirs("./data", exist_ok=True)
 
-    # Check if the database file exists on filesystem
-    db_file_exists = os.path.exists("./data/zSchedules.db")
+    # PostgreSQL has no local database file. The schema check below works for
+    # both supported database backends.
+    db_file_exists = not DATABASE_URL.startswith(("sqlite",)) or os.path.exists(
+        "./data/Schedules.db"
+    )
 
     if not db_file_exists:
         logger.info("Database file not found. Creating new database...")

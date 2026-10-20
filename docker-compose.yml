@@ -10,6 +10,7 @@ services:
       - 8.8.8.8
     environment:
       - PORT=8080
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/Schedules.db}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_CACHE_TTL=2700
     volumes:
@@ -43,10 +44,31 @@ services:
     networks:
       - medusa-network
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: medusa-postgres
+    profiles:
+      - postgres
+    environment:
+      POSTGRES_DB: medusa
+      POSTGRES_USER: medusa
+      POSTGRES_PASSWORD: medusa
+    volumes:
+      - medusa_postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medusa -d medusa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medusa-network
+
 volumes:
   medusa_data:
   medusa_logs:
   medusa_redis:
+  medusa_postgres:
 
 networks:
   medusa-network:

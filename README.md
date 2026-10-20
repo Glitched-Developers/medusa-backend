@@ -122,6 +122,28 @@ To create a migration after a schema change, run `alembic revision -m
 "describe the change"`. The database URL can be overridden with the
 `DATABASE_URL` environment variable.
 
+### Database options
+
+The application supports SQLite and PostgreSQL through the same SQLAlchemy
+schema and Alembic migrations. SQLite is the default:
+
+```bash
+alembic upgrade head
+python main.py
+```
+
+For PostgreSQL, start the optional database service and point both the
+application and Alembic at it:
+
+```bash
+docker compose --profile postgres up -d postgres
+DATABASE_URL=postgresql+asyncpg://medusa:medusa@localhost:5432/medusa alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://medusa:medusa@localhost:5432/medusa python main.py
+```
+
+To run the full stack with PostgreSQL, add the same `DATABASE_URL` to the
+`medusa` service in `docker-compose.yml` before starting it.
+
 ### Running Tests
 
 Ensure your code is working correctly with the comprehensive test suite.
