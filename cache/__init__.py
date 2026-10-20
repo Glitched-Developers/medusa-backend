@@ -71,5 +71,18 @@ class ScheduleCache:
             await self._client.aclose()
             self._client = None
 
+    async def acquire_lock(self, name: str, ttl: int = 5400) -> bool:
+        try:
+            return bool(await self._get_client().set(f"medusa:lock:{name}", "1", nx=True, ex=ttl))
+        except Exception as exc:
+            logger.warning(f"Redis lock failed: {exc}")
+            return True
+
+    async def release_lock(self, name: str) -> None:
+        try:
+            await self._get_client().delete(f"medusa:lock:{name}")
+        except Exception as exc:
+            logger.warning(f"Redis lock release failed: {exc}")
+
 
 schedule_cache = ScheduleCache()

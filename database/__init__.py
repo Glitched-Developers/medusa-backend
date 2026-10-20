@@ -139,9 +139,4 @@ async def init_database() -> None:
 
     except SQLAlchemyError as e:
         logger.error(f"Database error during initialization: {e}")
-        # Recover from database corruption by recreating structure
-        logger.warning("Attempting to recover database...")
-        async with engine.begin() as conn:
-            await conn.run_sync(meta.drop_all)
-            await conn.run_sync(meta.create_all)
-        logger.info("Database recovered.")
+        raise

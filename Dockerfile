@@ -53,6 +53,9 @@ COPY --from=builder /app/.venv /app/.venv
 # Копируем исходники приложения
 COPY --chown=app:app . .
 
+COPY --chown=app:app docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 USER app
 
 EXPOSE ${PORT}
@@ -61,4 +64,4 @@ EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:' + '${PORT}' + '/docs').getcode() == 200 else 1)"
 
-CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

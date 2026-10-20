@@ -13,6 +13,8 @@ The application includes:
 """
 
 import asyncio
+import os
+from contextlib import asynccontextmanager
 
 import uvicorn
 
@@ -29,12 +31,24 @@ from utils.version import get_version
 logger = setup_logging("INFO")
 
 # FastAPI application instance with metadata
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await init_database()
+    updater = asyncio.create_task(schedule_update_task())
+    try:
+        yield
+    finally:
+        updater.cancel()
+        await asyncio.gather(updater, return_exceptions=True)
+
+
 app = FastAPI(
     title="Medusa Backend API",
     description="RESTful API for BSU class schedules management",
     version=get_version(),
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Add CORS middleware to allow requests from dashboard
@@ -70,14 +84,6 @@ async def main():
     Raises:
         Exception: If database initialization or server startup fails
     """
-    # Initialize the database
-    logger.info("Initializing the database...")
-    await init_database()
-
-    # Start background task for automated schedule updates
-    logger.info("Starting the scheduled update task...")
-    asyncio.create_task(schedule_update_task())
-
     # Configure and start the web server
     logger.info("Starting the server...")
     logger.info(f"Server will run on http://localhost:8080")
@@ -85,7 +91,7 @@ async def main():
     config = uvicorn.Config(
         "main:app", 
         host="0.0.0.0", 
-        port=8080,
+        port=int(os.getenv("PORT", "8080")),
         log_level="info"
     )
     server = uvicorn.Server(config)

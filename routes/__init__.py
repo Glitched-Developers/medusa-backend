@@ -20,6 +20,7 @@ from loguru import logger
 
 import tasks
 from api import fetch_week, fetch_schedule, WeekActions
+from database import save_schedule
 from models import WeekResponse, ScheduleResponse
 from utils.version import get_version, get_git_commit, get_git_branch
 
@@ -206,6 +207,7 @@ async def get_schedules(
     try:
         logger.info(f"Schedule request: group_id={group_id}, week={week}")
         schedule = await fetch_schedule(group=group_id, week=week)
+        await save_schedule(group_id, schedule)
         logger.info(f"Successfully fetched schedule for group {group_id}")
         return ScheduleResponse(schedule=schedule)
     except ConnectionError as e:
@@ -215,3 +217,23 @@ async def get_schedules(
         logger.error(f"Unexpected error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
+
+@router.post(
+    "/groups/{group_id}/schedules/refresh",
+    response_model=ScheduleResponse,
+    summary="Refresh schedule",
+    description="Fetch the latest schedule and persist it for background updates",
+)
+async def refresh_schedule(
+    group_id: int = Path(..., description="BSU group ID", examples=[12345]),
+    week: Optional[str] = Query(None, description="Academic week number"),
+) -> ScheduleResponse:
+    try:
+        schedule = await fetch_schedule(group=group_id, week=week)
+        await save_schedule(group_id, schedule)
+        return ScheduleResponse(schedule=schedule)
+    except ConnectionError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.exception("Failed to refresh schedule for group %s", group_id)
+        raise HTTPException(status_code=500, detail=str(e))

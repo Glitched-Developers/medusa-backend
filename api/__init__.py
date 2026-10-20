@@ -384,9 +384,6 @@ async def fetch_schedule(
     cached = await schedule_cache.get(group, week)
     if cached is not None:
         logger.debug(f"Schedule cache hit for group {group}, week {week}")
-        from database import save_schedule
-
-        await save_schedule(group, cached)
         return cached
 
     try:
@@ -401,9 +398,6 @@ async def fetch_schedule(
             result = parse_schedule(
                 data, timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
-            from database import save_schedule
-
-            await save_schedule(group, result)
             await schedule_cache.set(group, week, result)
             return result
     except (httpx.HTTPError, IndexError, ValueError) as e:

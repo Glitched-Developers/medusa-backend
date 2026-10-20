@@ -13,6 +13,12 @@ services:
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/Schedules.db}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_CACHE_TTL=2700
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+        required: false
     volumes:
       - medusa_data:/app/data
       - medusa_logs:/app/logs
@@ -41,6 +47,11 @@ services:
     volumes:
       - medusa_redis:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - medusa-network
 

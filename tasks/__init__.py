@@ -16,10 +16,11 @@ import asyncio
 import json
 from datetime import datetime, timedelta
 
-from database import engine, table
+from database import engine, save_schedule, table
 from sqlalchemy import select
 from loguru import logger
 from api import fetch_schedule
+from cache import schedule_cache
 
 
 async def check_schedule_update(force_group: int = None) -> dict:
@@ -106,15 +107,7 @@ async def check_schedule_update(force_group: int = None) -> dict:
                         )
                         return {}
 
-                    await conn.execute(
-                        table.update()
-                        .where(table.c.group == force_group)
-                        .values(
-                            data=json.dumps(new_data["schedule"]),
-                            timestamp=new_data["metadata"]["timestamp"],
-                        )
-                    )
-                    await conn.commit()
+                    await save_schedule(force_group, new_data)
                     logger.info(f"Updated schedule for group {force_group}")
                     return new_data["schedule"]
                 except Exception as e:
@@ -188,15 +181,7 @@ async def check_schedule_update(force_group: int = None) -> dict:
                             )
                             continue
 
-                        await conn.execute(
-                            table.update()
-                            .where(table.c.group == group)
-                            .values(
-                                data=json.dumps(new_data["schedule"]),
-                                timestamp=new_data["metadata"]["timestamp"],
-                            )
-                        )
-                        await conn.commit()
+                        await save_schedule(group, new_data)
                         logger.info(f"Updated schedule for group {group}")
                         result[group] = new_data["schedule"]
 
@@ -241,7 +226,11 @@ async def schedule_update_task():
     while True:
         try:
             logger.info("Starting scheduled schedule update")
-            await check_schedule_update()
+            if await schedule_cache.acquire_lock("schedule-update"):
+                try:
+                    await check_schedule_update()
+                finally:
+                    await schedule_cache.release_lock("schedule-update")
             logger.info("Scheduled schedule update completed")
         except Exception as e:
             logger.exception(f"Error during scheduled schedule update: {e}")
