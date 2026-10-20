@@ -94,7 +94,7 @@ async def main():
     """
     # Configure and start the web server
     logger.info("Starting the server...")
-    logger.info(f"Server will run on http://localhost:8080")
+    logger.info("Server will run on http://localhost:8080")
 
     config = uvicorn.Config(
         "main:app",

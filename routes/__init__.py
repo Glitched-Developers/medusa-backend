@@ -19,7 +19,6 @@ import traceback
 import os
 from loguru import logger
 
-import tasks
 from cache import schedule_cache
 from observability.metrics import api_requests
 from api import fetch_week, fetch_schedule, WeekActions

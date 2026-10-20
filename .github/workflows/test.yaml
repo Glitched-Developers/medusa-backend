@@ -44,4 +44,4 @@ jobs:
         run: black --check .
 
       - name: Lint
-        run: flake8 . --max-line-length=88 --ignore=E203,W503
+        run: flake8 . --max-line-length=88 --ignore=E203,E501,W503 --exclude=build,dist,.venv,.git

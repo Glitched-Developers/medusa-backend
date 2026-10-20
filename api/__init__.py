@@ -2,7 +2,6 @@
 API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
 
-import logging
 import traceback
 import asyncio
 from loguru import logger

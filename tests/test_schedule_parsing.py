@@ -2,7 +2,6 @@
 Test for HTML schedule parsing functionality
 """
 
-import json
 from pathlib import Path
 
 import pytest

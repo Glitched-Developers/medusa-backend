@@ -149,9 +149,9 @@ def teacher_name_normalizer(name: str) -> str:
     RE_TEACHER_PREFIX = re.compile(
         r"""
         ^\s*
-        (?:                             
-            (?:асс|преп)                
-            (?:\s*\.?\s*[,;]?\s*)      
+        (?:
+            (?:асс|преп)
+            (?:\s*\.?\s*[,;]?\s*)
         )+
         """,
         re.IGNORECASE | re.VERBOSE,
