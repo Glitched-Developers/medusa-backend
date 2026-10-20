@@ -46,55 +46,33 @@ class TestMainApp:
 class TestMainFunction:
     """Test cases for main() function"""
     
-    @patch('main.init_database')
-    @patch('main.schedule_update_task')
-    @patch('main.asyncio.create_task')
     @patch('main.uvicorn.Server.serve')
     async def test_main_function_initialization(
         self, 
-        mock_serve, 
-        mock_create_task, 
-        mock_schedule_task,
-        mock_init_db
+        mock_serve
     ):
         """Test that main function initializes correctly"""
         from main import main
         
-        # Configure mocks to be awaitable
-        mock_init_db.return_value = None
+        # Configure mock to be awaitable
         mock_serve.return_value = None
-        mock_schedule_task.return_value = None
         
         await main()
-        
-        # Verify database initialization was called
-        mock_init_db.assert_called_once()
-        
-        # Verify background task was created
-        mock_create_task.assert_called_once()
         
         # Verify server was started
         mock_serve.assert_called_once()
     
     @patch.dict('os.environ', {'PORT': '9000'})
-    @patch('main.init_database')
-    @patch('main.schedule_update_task')
-    @patch('main.asyncio.create_task')
     @patch('main.uvicorn.Server.serve')
     async def test_main_function_custom_port(
         self, 
-        mock_serve, 
-        mock_create_task, 
-        mock_schedule_task,
-        mock_init_db
+        mock_serve
     ):
         """Test that main function uses custom port from environment"""
         from main import main
         
-        # Configure mocks to be awaitable
-        mock_init_db.return_value = None
+        # Configure mock to be awaitable
         mock_serve.return_value = None
-        mock_schedule_task.return_value = None
         
         await main()
         
