@@ -2,34 +2,38 @@
 # Stage 1: Builder
 FROM python:3.12-slim AS builder
 
+# Копируем готовый бинарник uv прямо из официального образа
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+# Оптимизации для сборки
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
+# Если есть C-зависимости, компиляторы ставим здесь
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Копируем файлы манифеста зависимостей (чтобы не сбрасывать кэш при правке кода)
+COPY pyproject.toml uv.lock* ./
 
-# Install dependencies from pyproject.toml
-COPY pyproject.toml .
-RUN pip install .
+# Синхронизируем зависимости в /app/.venv с сохранением кэша uv
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project --no-dev || \
+    uv sync --no-install-project --no-dev
+
 
 # Stage 2: Runner
 FROM python:3.12-slim AS runner
 
-# Accept build-time version argument
 ARG APP_VERSION
 ENV APP_VERSION=${APP_VERSION} \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8080 \
-    PATH="/opt/venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH"
 
 LABEL maintainer="shizamuru-dev" \
       description="Medusa Backend - BSU Schedule API" \
@@ -37,34 +41,24 @@ LABEL maintainer="shizamuru-dev" \
 
 WORKDIR /app
 
-# Install runtime dependencies (curl for healthcheck)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user
 RUN groupadd --gid 1001 app && \
-    useradd --uid 1001 --gid app --shell /bin/bash --create-home app
+    useradd --uid 1001 --gid app --shell /usr/sbin/nologin --no-create-home app
 
-# Copy virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
+RUN mkdir -p /app/data /app/logs && \
+    chown -R app:app /app
 
-# Copy application code
+# Копируем виртуальное окружение из builder
+COPY --from=builder /app/.venv /app/.venv
+
+# Копируем исходники приложения
 COPY --chown=app:app . .
 
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/data /app/logs && \
-    chown -R app:app /app/data /app/logs
-
-# Switch to non-root user
 USER app
 
-# Expose port
-EXPOSE $PORT
+EXPOSE ${PORT}
 
-# Health check
+# Health check на встроенном urllib без лишнего curl
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/docs || exit 1
+    CMD python -c "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:' + '${PORT}' + '/docs').getcode() == 200 else 1)"
 
-# Start service
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

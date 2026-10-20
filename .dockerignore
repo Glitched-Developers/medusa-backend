@@ -71,6 +71,7 @@ pytest.ini
 .env
 .env.local
 .env.development
+.github
 .env.test
 
 # Important: DO NOT exclude dashboard/libs - it contains essential files for Next.js build
@@ -83,6 +84,11 @@ pytest.ini
 *.db
 *.sqlite
 *.sqlite3
+LICENSE
+README.md
+README_RUS.md
+nginx.conf
+
 
 # Pre-commit
 .pre-commit-config.yaml
