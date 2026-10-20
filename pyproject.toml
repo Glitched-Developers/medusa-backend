@@ -146,4 +146,4 @@ exclude_dirs = ["tests", "venv", ".venv"]
 skips = ["B101"]  # Skip assert_used test
 
 [tool.setuptools.packages.find]
-include = ["api*", "cache*", "database*", "logger*", "models*", "routes*", "tasks*", "utils*"]
+include = ["api*", "cache*", "database*", "logger*", "models*", "observability*", "routes*", "tasks*", "utils*"]

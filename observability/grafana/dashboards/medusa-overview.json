@@ -1,0 +1,15 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}, "targets": [{"expr": "sum(rate(medusa_api_requests_total[5m]))", "legendFormat": "requests/sec", "refId": "A"}], "title": "API request rate", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}, "targets": [{"expr": "histogram_quantile(0.95, sum(rate(medusa_upstream_request_duration_seconds_bucket[5m])) by (le, resource))", "legendFormat": "{{resource}} p95", "refId": "A"}], "title": "Upstream latency p95", "type": "timeseries"}
+  ],
+  "schemaVersion": 39,
+  "tags": ["medusa"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Medusa overview",
+  "uid": "medusa-overview",
+  "version": 1
+}
