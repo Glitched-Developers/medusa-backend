@@ -147,6 +147,10 @@ To run the full stack with PostgreSQL, add the same `DATABASE_URL` to the
 Schedule tuning is available through `SCHEDULE_UPDATE_INTERVAL_MINUTES` and
 `SCHEDULE_FRESHNESS_MINUTES`. Upstream requests use `BSU_RETRIES`,
 `BSU_RETRY_DELAY`, and `BSU_TIMEOUT` for retry and timeout configuration.
+Manual schedule refresh requires `Authorization: Bearer <ADMIN_API_TOKEN>`.
+Set `ADMIN_API_TOKEN` in the environment; requests are rejected if it is unset
+or the token does not match. PostgreSQL startup migrations retry using
+`DB_MIGRATION_RETRIES` and `DB_MIGRATION_RETRY_DELAY_SECONDS`.
 
 ### Running Tests
 

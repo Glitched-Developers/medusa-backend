@@ -2,6 +2,7 @@
 
 import json
 import os
+import uuid
 from typing import Any, Optional
 
 from loguru import logger
@@ -71,16 +72,21 @@ class ScheduleCache:
             await self._client.aclose()
             self._client = None
 
-    async def acquire_lock(self, name: str, ttl: int = 5400) -> bool:
+    async def acquire_lock(self, name: str, ttl: int = 5400) -> Optional[str]:
         try:
-            return bool(await self._get_client().set(f"medusa:lock:{name}", "1", nx=True, ex=ttl))
+            token = str(uuid.uuid4())
+            acquired = await self._get_client().set(f"medusa:lock:{name}", token, nx=True, ex=ttl)
+            return token if acquired else None
         except Exception as exc:
             logger.warning(f"Redis lock failed: {exc}")
-            return True
+            return None
 
-    async def release_lock(self, name: str) -> None:
+    async def release_lock(self, name: str, token: str) -> None:
         try:
-            await self._get_client().delete(f"medusa:lock:{name}")
+            await self._get_client().eval(
+                "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+                1, f"medusa:lock:{name}", token,
+            )
         except Exception as exc:
             logger.warning(f"Redis lock release failed: {exc}")
 

@@ -11,11 +11,12 @@ Available endpoints:
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 """
 
-from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi import APIRouter, Header, HTTPException, Query, Path
 from fastapi.responses import RedirectResponse
 from typing import Optional
 import datetime
 import traceback
+import os
 from loguru import logger
 
 import tasks
@@ -227,7 +228,11 @@ async def get_schedules(
 async def refresh_schedule(
     group_id: int = Path(..., description="BSU group ID", examples=[12345]),
     week: Optional[str] = Query(None, description="Academic week number"),
+    authorization: Optional[str] = Header(None),
 ) -> ScheduleResponse:
+    admin_token = os.getenv("ADMIN_API_TOKEN")
+    if not admin_token or authorization != f"Bearer {admin_token}":
+        raise HTTPException(status_code=401, detail="Admin API token required")
     try:
         schedule = await fetch_schedule(group=group_id, week=week)
         await save_schedule(group_id, schedule)

@@ -14,11 +14,10 @@ Database Schema:
 
 import os
 import json
+from datetime import datetime, timezone
 
 from loguru import logger
-from sqlalchemy import Column, MetaData, String, Integer, Table, text, select
-from sqlalchemy import inspect
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import Column, DateTime, MetaData, String, Integer, Table, select
 from sqlalchemy.ext.asyncio import create_async_engine
 
 # Database configuration
@@ -37,7 +36,7 @@ table = Table(
     meta,
     Column("group", Integer, primary_key=True, comment="BSU group ID"),
     Column("data", String(), nullable=False, comment="JSON schedule data"),
-    Column("timestamp", String(19), nullable=False, comment="Last update timestamp"),
+    Column("timestamp", DateTime(timezone=True), nullable=False, comment="Last update timestamp"),
 )
 
 
@@ -53,7 +52,10 @@ async def save_schedule(group: int, schedule_data: dict) -> None:
         exists = await conn.scalar(
             select(table.c.group).where(table.c.group == group)
         )
-        values = {"data": json.dumps(schedule), "timestamp": timestamp}
+        parsed_timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        if parsed_timestamp.tzinfo is None:
+            parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)
+        values = {"data": json.dumps(schedule), "timestamp": parsed_timestamp}
         if exists is None:
             await conn.execute(table.insert().values(group=group, **values))
         else:
@@ -81,62 +83,8 @@ async def init_database() -> None:
         This function is safe to call multiple times - it won't recreate
         existing valid database structures.
     """
-    # Ensure data directory exists
+    # Schema changes are managed exclusively by Alembic.
     os.makedirs("./data", exist_ok=True)
-
-    # PostgreSQL has no local database file. The schema check below works for
-    # both supported database backends.
-    db_file_exists = not DATABASE_URL.startswith(("sqlite",)) or os.path.exists(
-        "./data/Schedules.db"
-    )
-
-    if not db_file_exists:
-        logger.info("Database file not found. Creating new database...")
-        # Create new database from scratch
-        async with engine.begin() as conn:
-            await conn.run_sync(meta.create_all)
-        logger.info("New database created successfully.")
-        return
-
-    # Verify existing database structure
-    try:
-        logger.info("Database file exists. Verifying structure...")
-        async with engine.begin() as conn:
-
-            def check_table_exists(connection):
-                """Check if schedule_by_groups table exists in database."""
-                inspector = inspect(connection)
-                return "schedule_by_groups" in inspector.get_table_names()
-
-            table_exists = await conn.run_sync(check_table_exists)
-
-            if not table_exists:
-                logger.warning("Table 'schedule_by_groups' missing. Creating...")
-                # Create missing table
-                await conn.run_sync(meta.create_all)
-                logger.info("Table created.")
-            else:
-                columns = await conn.run_sync(
-                    lambda connection: {
-                        column["name"]
-                        for column in inspect(connection).get_columns(
-                            "schedule_by_groups"
-                        )
-                    }
-                )
-                if "hash" in columns:
-                    logger.info("Removing obsolete hash column from schedule table...")
-                    try:
-                        await conn.execute(
-                            text("ALTER TABLE schedule_by_groups DROP COLUMN hash")
-                        )
-                    except SQLAlchemyError:
-                        logger.warning(
-                            "SQLite cannot drop the legacy hash column; "
-                            "the application will continue without using it."
-                        )
-                logger.info("Database structure verified.")
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error during initialization: {e}")
-        raise
+    async with engine.connect() as conn:
+        await conn.execute(select(1))
+    logger.info("Database connection verified.")
