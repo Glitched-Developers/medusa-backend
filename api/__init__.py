@@ -89,7 +89,9 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
         for attempt in range(UPSTREAM_RETRIES):
             try:
                 async with httpx.AsyncClient(proxy=proxy) as client:
-                    response = await client.get(url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT)
+                    response = await client.get(
+                        url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT
+                    )
                     response.raise_for_status()
                     data = response.json()
                 break
@@ -413,7 +415,9 @@ async def fetch_schedule(
         for attempt in range(UPSTREAM_RETRIES):
             try:
                 async with httpx.AsyncClient(proxy=proxy) as client:
-                    response = await client.post(url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT)
+                    response = await client.post(
+                        url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT
+                    )
                     response.raise_for_status()
                     data = response.text
                 break

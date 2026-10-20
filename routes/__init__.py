@@ -32,20 +32,18 @@ router = APIRouter(
     tags=["schedules"],
     responses={
         503: {"description": "Service unavailable - connection error"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 
 
 @router.get(
-    "/",
-    summary="Redirect to docs",
-    description="Redirect to the API documentation"
+    "/", summary="Redirect to docs", description="Redirect to the API documentation"
 )
 async def redirect_to_docs():
     """
     Redirect to the API documentation.
-    
+
     Returns:
         RedirectResponse: Redirect to API docs
     """
@@ -55,22 +53,22 @@ async def redirect_to_docs():
 @router.get(
     "/stats",
     summary="Server status API",
-    description="Get server status and basic information as JSON"
+    description="Get server status and basic information as JSON",
 )
 async def get_server_stats():
     """
     Get server status with basic information.
-    
+
     Returns server health status, current time, and API information as JSON.
     Now includes Git-based version information with commit hash and branch.
-    
+
     Returns:
         dict: Server status information including:
             - status: Server health status
             - timestamp: Current server time
             - service_info: API metadata
             - git_info: Git version, commit, and branch information
-    
+
     Example:
         GET /stats -> {"status": "OK", "timestamp": "2024-01-15T10:30:00Z", "version": "v1.0.0+abc1234", ...}
     """
@@ -78,7 +76,7 @@ async def get_server_stats():
     version = get_version()
     commit = get_git_commit()
     branch = get_git_branch()
-    
+
     response = {
         "status": "OK",
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
@@ -89,38 +87,36 @@ async def get_server_stats():
             "docs": "/docs",
             "redoc": "/redoc",
             "weeks": "/weeks",
-            "schedules": "/groups/{group_id}/schedules"
-        }
+            "schedules": "/groups/{group_id}/schedules",
+        },
     }
-    
+
     # Add Git information if available
     git_info = {}
     if commit:
         git_info["commit"] = commit
     if branch:
         git_info["branch"] = branch
-    
+
     if git_info:
         response["git"] = git_info
-    
+
     return response
 
 
 @router.get(
-    "/weeks", 
+    "/weeks",
     response_model=WeekResponse,
     summary="Get week number",
-    description="Calculate week number based on action (current/next/previous week)"
+    description="Calculate week number based on action (current/next/previous week)",
 )
 async def get_weeks(
     action: str = Query(
-        "this", 
-        description="Week action to perform (this, next, last)"
+        "this", description="Week action to perform (this, next, last)"
     ),
     week: Optional[str] = Query(
-        None, 
-        description="Base week number for calculations (optional)"
-    )
+        None, description="Base week number for calculations (optional)"
+    ),
 ) -> WeekResponse:
     """
     Get the week number based on the specified action and optional base week.
@@ -136,7 +132,7 @@ async def get_weeks(
         WeekResponse: JSON response containing the calculated week number
 
     Raises:
-        HTTPException: 
+        HTTPException:
             - 503: Service unavailable due to connection errors
             - 500: Internal server error for unexpected issues
 
@@ -150,39 +146,44 @@ async def get_weeks(
         action_mapping = {
             "this": WeekActions.THIS_WEEK,
             "next": WeekActions.NEXT_WEEK,
-            "last": WeekActions.LAST_WEEK
+            "last": WeekActions.LAST_WEEK,
         }
-        
+
         week_action = action_mapping.get(action, WeekActions.THIS_WEEK)
         week_number = await fetch_week(action=week_action, week=week or "0")
         logger.debug(f"Calculated week: {week_number}")
         return WeekResponse(week=str(week_number))
     except ConnectionError as e:
-        logger.error(f"Connection error in get_weeks: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        logger.error(
+            f"Connection error in get_weeks: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in get_weeks: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        logger.error(
+            f"Unexpected error in get_weeks: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
+
 @router.get(
-    "/groups/{group_id}/schedules/current", 
+    "/groups/{group_id}/schedules/current",
     response_model=ScheduleResponse,
     summary="Get current schedule",
-    description="Fetch the current week's schedule for a specific group"
+    description="Fetch the current week's schedule for a specific group",
 )
 @router.get(
-    "/groups/{group_id}/schedules", 
+    "/groups/{group_id}/schedules",
     response_model=ScheduleResponse,
     summary="Get schedule by week",
-    description="Fetch schedule for a specific group and week number"
+    description="Fetch schedule for a specific group and week number",
 )
 async def get_schedules(
     group_id: int = Path(..., description="BSU group ID", examples=[12345]),
     week: Optional[str] = Query(
-        None, 
-        description="Academic week number (defaults to current week)", 
-        examples=["0109202507092025"]
-    )
+        None,
+        description="Academic week number (defaults to current week)",
+        examples=["0109202507092025"],
+    ),
 ) -> ScheduleResponse:
     """
     Get schedule for a specific BSU group and academic week.
@@ -199,7 +200,7 @@ async def get_schedules(
         ScheduleResponse: JSON response containing the schedule data for the specified week
 
     Raises:
-        HTTPException: 
+        HTTPException:
             - 503: Service unavailable due to connection errors
             - 500: Internal server error for unexpected issues
 
@@ -214,10 +215,14 @@ async def get_schedules(
         logger.info(f"Successfully fetched schedule for group {group_id}")
         return ScheduleResponse(schedule=schedule)
     except ConnectionError as e:
-        logger.error(f"Connection error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        logger.error(
+            f"Connection error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        logger.error(
+            f"Unexpected error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 

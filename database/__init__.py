@@ -36,7 +36,12 @@ table = Table(
     meta,
     Column("group", Integer, primary_key=True, comment="BSU group ID"),
     Column("data", String(), nullable=False, comment="JSON schedule data"),
-    Column("timestamp", DateTime(timezone=True), nullable=False, comment="Last update timestamp"),
+    Column(
+        "timestamp",
+        DateTime(timezone=True),
+        nullable=False,
+        comment="Last update timestamp",
+    ),
 )
 
 
@@ -58,9 +63,7 @@ async def save_schedule(group: int, schedule_data: dict) -> None:
         raise ValueError("Schedule response is missing metadata.timestamp or schedule")
 
     async with engine.begin() as conn:
-        exists = await conn.scalar(
-            select(table.c.group).where(table.c.group == group)
-        )
+        exists = await conn.scalar(select(table.c.group).where(table.c.group == group))
         parsed_timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         if parsed_timestamp.tzinfo is None:
             parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)

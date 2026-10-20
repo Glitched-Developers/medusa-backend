@@ -20,15 +20,15 @@ from loguru import logger
 class InterceptHandler(logging.Handler):
     """
     Custom logging handler to intercept standard Python logging and redirect to loguru.
-    
+
     This handler captures log messages from Python's standard logging module
     and redirects them to loguru for consistent formatting and output.
     """
-    
+
     def emit(self, record):
         """
         Process a log record and redirect it to loguru.
-        
+
         Args:
             record: Python logging LogRecord instance
 
@@ -48,26 +48,28 @@ class InterceptHandler(logging.Handler):
             depth += 1
 
         # Log the message through loguru with proper context
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 def setup_logging(log_level="INFO"):
     """
     Configure application logging with loguru and intercept standard Python logs.
-    
+
     This function sets up centralized logging for the entire application:
     - Configures loguru with colored console output
     - Intercepts standard Python logging messages
     - Redirects uvicorn and FastAPI logs through loguru
     - Provides consistent formatting across all components
-    
+
     Args:
         log_level (str): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
                         Defaults to "INFO"
-    
+
     Returns:
         loguru.Logger: Configured logger instance ready for use
-        
+
     Example:
         >>> logger = setup_logging("DEBUG")
         >>> logger.info("Application started")
@@ -83,7 +85,7 @@ def setup_logging(log_level="INFO"):
                     "<level>{level: <8}</level> | "
                     "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
                     "<level>{message}</level>"
-                )
+                ),
             }
         ]
     )

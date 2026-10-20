@@ -31,6 +31,7 @@ from utils.version import get_version
 # Initialize the logger
 logger = setup_logging("INFO")
 
+
 # FastAPI application instance with metadata
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -67,7 +68,7 @@ app.add_middleware(
         "http://localhost:8080",  # Backend server itself
         "http://127.0.0.1:8080",  # Alternative backend URL
         "http://localhost:8000",  # Alternative backend port
-        "http://127.0.0.1:8000"   # Alternative backend URL and port
+        "http://127.0.0.1:8000",  # Alternative backend URL and port
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -76,33 +77,35 @@ app.add_middleware(
 
 app.include_router(router)
 app.mount("/metrics", metrics_app)
-    
+
+
 async def main():
     """
     Main application entry point.
-    
+
     Initializes the database, starts background tasks, and runs the FastAPI server.
     The server listens on localhost with a configurable port (default: 8000).
-    
+
     Environment Variables:
         PORT (int): Server port number (default: 8000)
-    
+
     Raises:
         Exception: If database initialization or server startup fails
     """
     # Configure and start the web server
     logger.info("Starting the server...")
     logger.info(f"Server will run on http://localhost:8080")
-    
+
     config = uvicorn.Config(
-        "main:app", 
-        host="0.0.0.0", 
+        "main:app",
+        host="0.0.0.0",
         port=int(os.getenv("PORT", "8080")),
-        log_level="info"
+        log_level="info",
     )
     server = uvicorn.Server(config)
 
     await server.serve()
+
 
 if __name__ == "__main__":
     """Entry point when script is run directly."""

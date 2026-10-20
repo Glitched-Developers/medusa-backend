@@ -78,7 +78,11 @@ async def check_schedule_update(force_group: int = None) -> dict:
             # Unpack database row values
             group_id, data_json, timestamp = old_data
 
-            stored_time = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+            stored_time = (
+                timestamp
+                if timestamp.tzinfo
+                else timestamp.replace(tzinfo=timezone.utc)
+            )
             time_difference = datetime.now(timezone.utc) - stored_time
 
             # Use cached data if within 45-minute validity period
@@ -154,12 +158,18 @@ async def check_schedule_update(force_group: int = None) -> dict:
                         # Unpack database row values
                         group_id, data_json, timestamp = old_data
 
-                        stored_time = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+                        stored_time = (
+                            timestamp
+                            if timestamp.tzinfo
+                            else timestamp.replace(tzinfo=timezone.utc)
+                        )
                         current_time = datetime.now(timezone.utc)
                         time_difference = current_time - stored_time
 
                         # Skip if data is fresh (within 45-minute cache period)
-                        if time_difference < timedelta(minutes=SCHEDULE_FRESHNESS_MINUTES):
+                        if time_difference < timedelta(
+                            minutes=SCHEDULE_FRESHNESS_MINUTES
+                        ):
                             logger.info(
                                 f"Using cached data for group {group}, last updated {stored_time}"
                             )

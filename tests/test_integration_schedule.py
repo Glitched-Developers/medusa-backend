@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from api import parse_schedule, fetch_schedule
 
+
 @pytest.mark.asyncio
 async def test_schedule_integration():
     """
@@ -35,7 +36,7 @@ async def test_schedule_integration():
     # 2. Parse HTML and compare
     print("\nStep 1: Testing local HTML parsing...")
     parsed_result = parse_schedule(html_content, timestamp=expected_timestamp)
-    
+
     # Deep comparison
     assert parsed_result == expected_data, (
         "Parsed local HTML does not match expected JSON.\n"
@@ -45,34 +46,42 @@ async def test_schedule_integration():
     print("✓ Local parsing matches expected JSON")
 
     # 3. Fetch real data and compare
-    if (os.environ.get("CI") or os.environ.get("GITLAB_CI")) and not os.environ.get("BSU_PROXY"):
-        print("Skipping remote data fetching in CI environment (no BSU_PROXY configured)")
+    if (os.environ.get("CI") or os.environ.get("GITLAB_CI")) and not os.environ.get(
+        "BSU_PROXY"
+    ):
+        print(
+            "Skipping remote data fetching in CI environment (no BSU_PROXY configured)"
+        )
         return
 
     print("Step 2: Testing remote data fetching...")
     # Group: 90002493, Week: 1711202523112025
     group_id = 90002493
     week_id = "1711202523112025"
-    
+
     try:
         fetched_result = await fetch_schedule(group=group_id, week=week_id)
     except Exception as e:
         pytest.fail(f"Failed to fetch remote schedule: {e}")
-    
+
     # Validate structure instead of exact content match
     # (Content changes over time, so exact match against static JSON is brittle)
     assert "metadata" in fetched_result, "Response missing metadata"
     assert "schedule" in fetched_result, "Response missing schedule"
     assert "timestamp" in fetched_result["metadata"], "Metadata missing timestamp"
-    assert isinstance(fetched_result["schedule"], dict), "Schedule should be a dictionary"
-    
+    assert isinstance(
+        fetched_result["schedule"], dict
+    ), "Schedule should be a dictionary"
+
     # If we got any schedule data, verify its structure
     if fetched_result["schedule"]:
         # Check at least one day
         days = list(fetched_result["schedule"].keys())
         first_day_lessons = fetched_result["schedule"][days[0]]
-        assert isinstance(first_day_lessons, list), "Day schedule should be a list of lessons"
-        
+        assert isinstance(
+            first_day_lessons, list
+        ), "Day schedule should be a list of lessons"
+
         if first_day_lessons:
             lesson = first_day_lessons[0]
             required_fields = ["name", "time", "type", "teacher", "auditory"]
@@ -84,4 +93,3 @@ async def test_schedule_integration():
     # Note: We do not compare fetched_result with expected_data because the live schedule
     # changes over time, making exact comparison with static JSON brittle.
     # The structure validation above is sufficient for integration testing.
-

@@ -105,7 +105,9 @@ class ScheduleCache:
         """Acquire a distributed lock and return its owner token if successful."""
         try:
             token = str(uuid.uuid4())
-            acquired = await self._get_client().set(f"medusa:lock:{name}", token, nx=True, ex=ttl)
+            acquired = await self._get_client().set(
+                f"medusa:lock:{name}", token, nx=True, ex=ttl
+            )
             return token if acquired else None
         except Exception as exc:
             logger.warning(f"Redis lock failed: {exc}")
@@ -116,7 +118,9 @@ class ScheduleCache:
         try:
             await self._get_client().eval(
                 "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
-                1, f"medusa:lock:{name}", token,
+                1,
+                f"medusa:lock:{name}",
+                token,
             )
         except Exception as exc:
             logger.warning(f"Redis lock release failed: {exc}")
