@@ -33,7 +33,9 @@ jobs:
         run: pytest tests/ -v
 
       - name: Validate migrations
-        run: alembic upgrade head
+        run: |
+          mkdir -p data
+          alembic upgrade head
 
       - name: Validate Docker Compose
         run: ADMIN_API_TOKEN=ci-test-token docker compose config --quiet
