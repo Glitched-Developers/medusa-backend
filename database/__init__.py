@@ -13,9 +13,10 @@ Database Schema:
 """
 
 import os
+import json
 
 from loguru import logger
-from sqlalchemy import Column, MetaData, String, Integer, Table, text
+from sqlalchemy import Column, MetaData, String, Integer, Table, text, select
 from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -36,8 +37,29 @@ table = Table(
     meta,
     Column("group", Integer, primary_key=True, comment="BSU group ID"),
     Column("data", String(), nullable=False, comment="JSON schedule data"),
-    Column("timestamp", String(8), nullable=False, comment="Last update timestamp"),
+    Column("timestamp", String(19), nullable=False, comment="Last update timestamp"),
 )
+
+
+async def save_schedule(group: int, schedule_data: dict) -> None:
+    """Persist a successfully fetched schedule for future background updates."""
+    metadata = schedule_data.get("metadata", {})
+    timestamp = metadata.get("timestamp")
+    schedule = schedule_data.get("schedule")
+    if not timestamp or schedule is None:
+        raise ValueError("Schedule response is missing metadata.timestamp or schedule")
+
+    async with engine.begin() as conn:
+        exists = await conn.scalar(
+            select(table.c.group).where(table.c.group == group)
+        )
+        values = {"data": json.dumps(schedule), "timestamp": timestamp}
+        if exists is None:
+            await conn.execute(table.insert().values(group=group, **values))
+        else:
+            await conn.execute(
+                table.update().where(table.c.group == group).values(**values)
+            )
 
 
 async def init_database() -> None:
