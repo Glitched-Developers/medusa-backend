@@ -41,7 +41,16 @@ table = Table(
 
 
 async def save_schedule(group: int, schedule_data: dict) -> None:
-    """Persist a successfully fetched schedule for future background updates."""
+    """Insert or update a group's schedule snapshot.
+
+    Args:
+        group: BSU group identifier used as the primary key.
+        schedule_data: Parsed response containing ``metadata.timestamp`` and
+            ``schedule`` fields.
+
+    Raises:
+        ValueError: If required response fields are missing.
+    """
     metadata = schedule_data.get("metadata", {})
     timestamp = metadata.get("timestamp")
     schedule = schedule_data.get("schedule")

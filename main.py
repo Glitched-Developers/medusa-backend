@@ -25,7 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import init_database
 from routes import router
 from tasks import schedule_update_task
-from metrics import metrics_app
+from observability.metrics import metrics_app
 from utils.version import get_version
 
 # Initialize the logger
@@ -34,6 +34,7 @@ logger = setup_logging("INFO")
 # FastAPI application instance with metadata
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    """Initialize resources on startup and stop background work on shutdown."""
     await init_database()
     updater = None
     if os.getenv("SCHEDULE_UPDATER_ENABLED", "true").lower() in {"1", "true", "yes"}:

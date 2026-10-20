@@ -21,7 +21,7 @@ from loguru import logger
 
 import tasks
 from cache import schedule_cache
-from metrics import api_requests
+from observability.metrics import api_requests
 from api import fetch_week, fetch_schedule, WeekActions
 from database import save_schedule
 from models import WeekResponse, ScheduleResponse
@@ -232,6 +232,10 @@ async def refresh_schedule(
     week: Optional[str] = Query(None, description="Academic week number"),
     authorization: Optional[str] = Header(None),
 ) -> ScheduleResponse:
+    """Refresh and persist a group's schedule using the protected admin endpoint.
+
+    The request requires ``ADMIN_API_TOKEN`` and is rate-limited per group.
+    """
     admin_token = os.getenv("ADMIN_API_TOKEN")
     if not admin_token or authorization != f"Bearer {admin_token}":
         raise HTTPException(status_code=401, detail="Admin API token required")

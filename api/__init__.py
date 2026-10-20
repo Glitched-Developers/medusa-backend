@@ -72,6 +72,10 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
 
     Raises:
         ConnectionError: If there's an issue with the API connection or data is invalid
+
+    The result is cached by action and base-week value. Upstream HTTP failures
+    are retried with exponential backoff before being exposed as
+    ``ConnectionError``.
     """
     try:
         cached = await schedule_cache.get_week(action.value, str(week))
@@ -386,6 +390,11 @@ async def fetch_schedule(
 
     Returns:
         Dictionary with parsed schedule data and metadata
+
+    Raises:
+        ConnectionError: If the upstream request fails after all retries or
+            the response cannot be parsed.
+        HTTPException: If ``week`` is not a valid BSU week code.
     """
     if week is None:
         week = str(await fetch_week())

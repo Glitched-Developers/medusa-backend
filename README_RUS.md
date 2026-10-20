@@ -109,6 +109,43 @@ medusa-backend/
 └── 🧪 tests/               # Набор тестов Pytest
 ```
 
+### Ключевые функции и методы
+
+Основная логика разбита на небольшие функции, которые можно переиспользовать
+и тестировать независимо:
+
+- `api.fetch_week()` получает номер учебной недели с кешированием и повторными запросами к BSU.
+- `api.fetch_schedule()` загружает расписание группы, проверяет код недели и кеширует результат.
+- `api.parse_schedule()` преобразует HTML расписания в структуру `metadata` и `schedule`, включая обработку `rowspan` и подгрупп.
+- `api.process_day_lessons()` объединяет подгруппы одного занятия.
+- `utils.week_validator()` проверяет формат и даты кода учебной недели.
+- `database.save_schedule()` сохраняет снимок расписания в SQLite.
+- `cache.ScheduleCache` предоставляет кеш расписаний, ограничитель запросов и распределённую блокировку Redis.
+- `tasks.schedule_update_task()` запускает периодическое обновление, а `tasks.check_schedule_update()` обновляет устаревшие данные.
+
+У функций и методов исходного кода есть docstring с назначением, аргументами,
+результатом и исключениями, где это применимо.
+
+### Мониторинг Prometheus и Grafana
+
+Метрики экспортируются приложением через `GET /metrics`. Для запуска отдельного
+стека мониторинга выполните:
+
+```bash
+docker compose -f docker-compose.yml up -d
+docker compose -f docker-compose.monitoring.yml up -d
+```
+
+После запуска:
+
+- Prometheus: <http://localhost:9090>
+- Grafana: <http://localhost:3000> (`admin` / `admin` по умолчанию)
+
+Файл `observability/prometheus.yml` настроен на backend, запущенный на хосте
+по адресу `host.docker.internal:8080`. Если backend работает в Compose-сети,
+замените target на `medusa:8080` и подключите monitoring Compose к сети
+`medusa-network`.
+
 ### Запуск тестов
 
 Убедитесь, что ваш код работает корректно с помощью полного набора тестов.

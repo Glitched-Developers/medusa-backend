@@ -22,7 +22,7 @@ from sqlalchemy import select
 from loguru import logger
 from api import fetch_schedule
 from cache import schedule_cache
-from metrics import schedule_updates
+from observability.metrics import schedule_updates
 
 UPDATE_INTERVAL_MINUTES = int(os.getenv("SCHEDULE_UPDATE_INTERVAL_MINUTES", "90"))
 SCHEDULE_FRESHNESS_MINUTES = int(os.getenv("SCHEDULE_FRESHNESS_MINUTES", "45"))

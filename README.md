@@ -142,7 +142,7 @@ DATABASE_URL=postgresql+asyncpg://medusa:medusa@localhost:5432/medusa python mai
 ```
 
 To run the full stack with PostgreSQL, add the same `DATABASE_URL` to the
-`medusa` service in `docker-compose.yml` before starting it.
+`medusa` service in `examples/docker-compose.yml` before starting it.
 
 Schedule tuning is available through `SCHEDULE_UPDATE_INTERVAL_MINUTES` and
 `SCHEDULE_FRESHNESS_MINUTES`. Upstream requests use `BSU_RETRIES`,

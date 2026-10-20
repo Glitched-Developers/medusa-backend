@@ -31,6 +31,9 @@ class InterceptHandler(logging.Handler):
         
         Args:
             record: Python logging LogRecord instance
+
+        The original exception information is preserved when forwarding the
+        record to Loguru.
         """
         # Map Python logging level to loguru level
         try:
