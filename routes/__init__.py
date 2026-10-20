@@ -20,6 +20,7 @@ import os
 from loguru import logger
 
 import tasks
+from cache import schedule_cache
 from api import fetch_week, fetch_schedule, WeekActions
 from database import save_schedule
 from models import WeekResponse, ScheduleResponse
@@ -233,6 +234,13 @@ async def refresh_schedule(
     admin_token = os.getenv("ADMIN_API_TOKEN")
     if not admin_token or authorization != f"Bearer {admin_token}":
         raise HTTPException(status_code=401, detail="Admin API token required")
+    rate_limit = int(os.getenv("ADMIN_REFRESH_RATE_LIMIT", "5"))
+    rate_window = int(os.getenv("ADMIN_REFRESH_RATE_WINDOW_SECONDS", "60"))
+    allowed = await schedule_cache.allow_request(
+        f"medusa:admin-refresh:{group_id}", rate_limit, rate_window
+    )
+    if not allowed:
+        raise HTTPException(status_code=429, detail="Refresh rate limit exceeded")
     try:
         schedule = await fetch_schedule(group=group_id, week=week)
         await save_schedule(group_id, schedule)

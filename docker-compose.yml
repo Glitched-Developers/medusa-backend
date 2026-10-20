@@ -18,6 +18,10 @@ services:
       - BSU_RETRIES=${BSU_RETRIES:-3}
       - BSU_RETRY_DELAY=${BSU_RETRY_DELAY:-1}
       - BSU_TIMEOUT=${BSU_TIMEOUT:-10}
+      - ADMIN_API_TOKEN=${ADMIN_API_TOKEN:?ADMIN_API_TOKEN must be set}
+      - ADMIN_REFRESH_RATE_LIMIT=${ADMIN_REFRESH_RATE_LIMIT:-5}
+      - ADMIN_REFRESH_RATE_WINDOW_SECONDS=${ADMIN_REFRESH_RATE_WINDOW_SECONDS:-60}
+      - SCHEDULE_UPDATER_ENABLED=${SCHEDULE_UPDATER_ENABLED:-true}
     depends_on:
       redis:
         condition: service_healthy
@@ -48,7 +52,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: medusa-redis
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     volumes:
       - medusa_redis:/data
     restart: unless-stopped

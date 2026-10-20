@@ -151,6 +151,9 @@ Manual schedule refresh requires `Authorization: Bearer <ADMIN_API_TOKEN>`.
 Set `ADMIN_API_TOKEN` in the environment; requests are rejected if it is unset
 or the token does not match. PostgreSQL startup migrations retry using
 `DB_MIGRATION_RETRIES` and `DB_MIGRATION_RETRY_DELAY_SECONDS`.
+Manual refresh is rate-limited by `ADMIN_REFRESH_RATE_LIMIT` per
+`ADMIN_REFRESH_RATE_WINDOW_SECONDS`. Set `SCHEDULE_UPDATER_ENABLED=false` for
+additional API workers; run the periodic updater in exactly one process.
 
 ### Running Tests
 

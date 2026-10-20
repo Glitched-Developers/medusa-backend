@@ -34,12 +34,15 @@ logger = setup_logging("INFO")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await init_database()
-    updater = asyncio.create_task(schedule_update_task())
+    updater = None
+    if os.getenv("SCHEDULE_UPDATER_ENABLED", "true").lower() in {"1", "true", "yes"}:
+        updater = asyncio.create_task(schedule_update_task())
     try:
         yield
     finally:
-        updater.cancel()
-        await asyncio.gather(updater, return_exceptions=True)
+        if updater is not None:
+            updater.cancel()
+            await asyncio.gather(updater, return_exceptions=True)
 
 
 app = FastAPI(

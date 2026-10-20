@@ -67,6 +67,18 @@ class ScheduleCache:
         except Exception as exc:
             logger.warning(f"Redis week cache write failed: {exc}")
 
+    async def allow_request(self, key: str, limit: int, window: int) -> bool:
+        """Allow at most ``limit`` requests during a Redis-backed time window."""
+        try:
+            client = self._get_client()
+            count = await client.incr(key)
+            if count == 1:
+                await client.expire(key, window)
+            return count <= limit
+        except Exception as exc:
+            logger.warning(f"Redis rate limit failed: {exc}")
+            return False
+
     async def close(self) -> None:
         if self._client is not None:
             await self._client.aclose()
