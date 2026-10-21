@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from loguru import logger
 from redis.asyncio import Redis
-from observability.metrics import cache_operations
+from observability.metrics import cache_operations, cache_hits, cache_misses
 
 
 class ScheduleCache:
@@ -44,7 +44,12 @@ class ScheduleCache:
         """Read a cached schedule, returning ``None`` on a miss or Redis error."""
         try:
             value = await self._get_client().get(self.key(group, week))
-            cache_operations.labels("schedule_get", "hit" if value else "miss").inc()
+            if value:
+                cache_operations.labels("schedule_get", "hit").inc()
+                cache_hits.labels("schedule").inc()
+            else:
+                cache_operations.labels("schedule_get", "miss").inc()
+                cache_misses.labels("schedule").inc()
             return json.loads(value) if value else None
         except Exception as exc:
             cache_operations.labels("schedule_get", "error").inc()
@@ -66,6 +71,10 @@ class ScheduleCache:
         """Read a cached week number, returning ``None`` if unavailable."""
         try:
             value = await self._get_client().get(self.week_key(action, week))
+            if value is not None:
+                cache_hits.labels("week").inc()
+            else:
+                cache_misses.labels("week").inc()
             return int(value) if value is not None else None
         except Exception as exc:
             logger.warning(f"Redis week cache read failed: {exc}")

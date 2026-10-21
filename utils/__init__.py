@@ -8,13 +8,35 @@ Key Functions:
 - week_validator: Validates BSU week codes in DDMMYYYYDDMMYYYY format
 - Date range validation and format checking
 - Input sanitization and error handling
+- normalize_timezone: Ensures datetime objects have UTC timezone
 """
 
 import re
 
 from fastapi import HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 import calendar
+
+
+def normalize_timezone(dt: datetime) -> datetime:
+    """Ensure datetime has UTC timezone information.
+    
+    Args:
+        dt: A datetime object that may or may not have timezone info
+        
+    Returns:
+        A timezone-aware datetime in UTC
+        
+    Examples:
+        >>> naive_dt = datetime(2024, 1, 15, 12, 0, 0)
+        >>> normalize_timezone(naive_dt)
+        datetime.datetime(2024, 1, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        
+        >>> aware_dt = datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+        >>> normalize_timezone(aware_dt)
+        datetime.datetime(2024, 1, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
+    """
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 def week_validator(week) -> bool:

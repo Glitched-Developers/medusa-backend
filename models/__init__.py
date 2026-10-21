@@ -12,8 +12,8 @@ The models provide:
 - JSON serialization/deserialization
 """
 
-from pydantic import BaseModel, Field
-from typing import Dict, Any
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Any, List, Optional
 
 
 class WeekResponse(BaseModel):
@@ -38,6 +38,76 @@ class WeekResponse(BaseModel):
         description="Academic week number as string",
         json_schema_extra={"examples": ["15"]},
     )
+
+
+class SubgroupData(BaseModel):
+    """Subgroup-specific lesson data."""
+    
+    discipline: str = Field(..., description="Subject name")
+    teacher: str = Field(..., description="Instructor name")
+    auditory: str = Field(..., description="Room number or location")
+    online: bool = Field(..., description="Whether lesson is online")
+    subgroup: int = Field(..., ge=0, le=2, description="Subgroup number (0=all, 1 or 2=specific)")
+
+
+class LessonData(BaseModel):
+    """Individual lesson entry in a day's schedule."""
+    
+    number: int = Field(..., ge=1, le=7, description="Lesson number in the day (1-7)")
+    time: str = Field(..., pattern=r"^\d{2}:\d{2}-\d{2}:\d{2}$", description="Time range (HH:MM-HH:MM)")
+    type: str = Field(..., description="Lesson type (lecture, lab, practice)")
+    
+    # Optional subgroup-specific fields
+    subgroup_0: Optional[SubgroupData] = Field(None, description="All-subgroup lesson data")
+    subgroup_1: Optional[SubgroupData] = Field(None, description="Subgroup 1 specific data")
+    subgroup_2: Optional[SubgroupData] = Field(None, description="Subgroup 2 specific data")
+    
+    @field_validator("number")
+    @classmethod
+    def validate_lesson_number(cls, v: int) -> int:
+        """Ensure lesson number is within valid range."""
+        if not 1 <= v <= 7:
+            raise ValueError("Lesson number must be between 1 and 7")
+        return v
+    
+    @field_validator("time")
+    @classmethod
+    def validate_time_format(cls, v: str) -> str:
+        """Ensure time follows HH:MM-HH:MM format."""
+        import re
+        if not re.match(r"^\d{2}:\d{2}-\d{2}:\d{2}$", v):
+            raise ValueError("Time must follow HH:MM-HH:MM format")
+        return v
+
+
+class ScheduleMetadata(BaseModel):
+    """Schedule metadata containing timestamp information."""
+    
+    timestamp: str = Field(..., description="ISO format timestamp when schedule was fetched")
+
+
+class ParsedSchedule(BaseModel):
+    """Complete parsed schedule structure with validation.
+    
+    This model validates the internal structure returned by parse_schedule()
+    before it's saved to the database or returned via API.
+    """
+    
+    metadata: ScheduleMetadata = Field(..., description="Schedule metadata")
+    schedule: Dict[str, List[LessonData]] = Field(
+        ...,
+        description="Schedule organized by weekday, each containing list of lessons"
+    )
+    
+    @field_validator("schedule")
+    @classmethod
+    def validate_weekdays(cls, v: Dict[str, List[LessonData]]) -> Dict[str, List[LessonData]]:
+        """Ensure schedule keys are valid weekday names."""
+        valid_days = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday"}
+        invalid_days = set(v.keys()) - valid_days
+        if invalid_days:
+            raise ValueError(f"Invalid weekday names: {invalid_days}")
+        return v
 
 
 class ScheduleResponse(BaseModel):

@@ -23,6 +23,7 @@ from loguru import logger
 from api import fetch_schedule
 from cache import schedule_cache
 from observability.metrics import schedule_updates
+from utils import normalize_timezone
 
 UPDATE_INTERVAL_MINUTES = int(os.getenv("SCHEDULE_UPDATE_INTERVAL_MINUTES", "90"))
 SCHEDULE_FRESHNESS_MINUTES = int(os.getenv("SCHEDULE_FRESHNESS_MINUTES", "45"))
@@ -78,11 +79,7 @@ async def check_schedule_update(force_group: int = None) -> dict:
             # Unpack database row values
             group_id, data_json, timestamp = old_data
 
-            stored_time = (
-                timestamp
-                if timestamp.tzinfo
-                else timestamp.replace(tzinfo=timezone.utc)
-            )
+            stored_time = normalize_timezone(timestamp)
             time_difference = datetime.now(timezone.utc) - stored_time
 
             # Use cached data if within 45-minute validity period
@@ -158,11 +155,7 @@ async def check_schedule_update(force_group: int = None) -> dict:
                         # Unpack database row values
                         group_id, data_json, timestamp = old_data
 
-                        stored_time = (
-                            timestamp
-                            if timestamp.tzinfo
-                            else timestamp.replace(tzinfo=timezone.utc)
-                        )
+                        stored_time = normalize_timezone(timestamp)
                         current_time = datetime.now(timezone.utc)
                         time_difference = current_time - stored_time
 

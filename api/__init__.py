@@ -13,9 +13,13 @@ import enum
 import httpx
 import re
 from bs4 import BeautifulSoup, NavigableString
+from pybreaker import CircuitBreakerError
+from pydantic import ValidationError
 
 from utils import week_validator, teacher_name_normalizer
 from cache import schedule_cache
+from api.circuit_breaker import bsu_breaker
+from models import ParsedSchedule
 
 # HTTP request headers to bypass server restrictions
 HEADERS = {
@@ -71,10 +75,11 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
 
     Raises:
         ConnectionError: If there's an issue with the API connection or data is invalid
+        CircuitBreakerError: If circuit breaker is open (upstream unavailable)
 
     The result is cached by action and base-week value. Upstream HTTP failures
     are retried with exponential backoff before being exposed as
-    ``ConnectionError``.
+    ``ConnectionError``. Circuit breaker protects against cascading failures.
     """
     try:
         cached = await schedule_cache.get_week(action.value, str(week))
@@ -85,27 +90,35 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/week/week_json.php?week={week}&act={action.value}"
         logger.debug(f"Fetching week data from: {url}")
-        for attempt in range(UPSTREAM_RETRIES):
-            try:
-                async with httpx.AsyncClient(proxy=proxy) as client:
-                    response = await client.get(
-                        url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT
-                    )
-                    response.raise_for_status()
-                    data = response.json()
-                break
-            except httpx.HTTPError:
-                if attempt == UPSTREAM_RETRIES - 1:
-                    raise
-                await asyncio.sleep(RETRY_DELAY * (2**attempt))
+        
+        @bsu_breaker
+        async def _fetch():
+            for attempt in range(UPSTREAM_RETRIES):
+                try:
+                    async with httpx.AsyncClient(proxy=proxy) as client:
+                        response = await client.get(
+                            url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT
+                        )
+                        response.raise_for_status()
+                        data = response.json()
+                    return data
+                except httpx.HTTPError:
+                    if attempt == UPSTREAM_RETRIES - 1:
+                        raise
+                    await asyncio.sleep(RETRY_DELAY * (2**attempt))
+        
+        data = await _fetch()
 
-            if not data or not isinstance(data, list):
-                logger.error(f"Invalid data format received from API: {data}")
-                raise ValueError("Invalid data format received from API")
+        if not data or not isinstance(data, list):
+            logger.error(f"Invalid data format received from API: {data}")
+            raise ValueError("Invalid data format received from API")
 
-            result = data[0]
-            await schedule_cache.set_week(action.value, str(week), result)
-            return result
+        result = data[0]
+        await schedule_cache.set_week(action.value, str(week), result)
+        return result
+    except CircuitBreakerError as e:
+        logger.error(f"Circuit breaker is open for BSU upstream: {e}")
+        raise ConnectionError("BSU upstream is temporarily unavailable (circuit breaker open)") from e
     except (httpx.HTTPError, IndexError, ValueError) as e:
         logger.error(
             f"Failed to fetch week data: {type(e).__name__}: {e}\n{traceback.format_exc()}"
@@ -411,25 +424,32 @@ async def fetch_schedule(
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/groups/show_schedule.php?group={group}&week={week}"
         logger.debug(f"Fetching schedule for group {group}, week {week} from: {url}")
-        for attempt in range(UPSTREAM_RETRIES):
-            try:
-                async with httpx.AsyncClient(proxy=proxy) as client:
-                    response = await client.post(
-                        url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT
-                    )
-                    response.raise_for_status()
-                    data = response.text
-                break
-            except httpx.HTTPError:
-                if attempt == UPSTREAM_RETRIES - 1:
-                    raise
-                await asyncio.sleep(RETRY_DELAY * (2**attempt))
+        
+        @bsu_breaker
+        async def _fetch():
+            for attempt in range(UPSTREAM_RETRIES):
+                try:
+                    async with httpx.AsyncClient(proxy=proxy) as client:
+                        response = await client.post(
+                            url, headers=HEADERS, timeout=UPSTREAM_TIMEOUT
+                        )
+                        response.raise_for_status()
+                        return response.text
+                except httpx.HTTPError:
+                    if attempt == UPSTREAM_RETRIES - 1:
+                        raise
+                    await asyncio.sleep(RETRY_DELAY * (2**attempt))
+        
+        data = await _fetch()
 
-            result = parse_schedule(
-                data, timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-            )
-            await schedule_cache.set(group, week, result)
-            return result
+        result = parse_schedule(
+            data, timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        )
+        await schedule_cache.set(group, week, result)
+        return result
+    except CircuitBreakerError as e:
+        logger.error(f"Circuit breaker is open for BSU upstream: {e}")
+        raise ConnectionError("BSU upstream is temporarily unavailable (circuit breaker open)") from e
     except (httpx.HTTPError, IndexError, ValueError) as e:
         logger.error(
             f"Failed to fetch schedule data: {type(e).__name__}: {e}\n{traceback.format_exc()}"

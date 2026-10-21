@@ -11,13 +11,15 @@ Available endpoints:
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 """
 
-from fastapi import APIRouter, Header, HTTPException, Query, Path
+from fastapi import APIRouter, Header, HTTPException, Query, Path, Request
 from fastapi.responses import RedirectResponse
 from typing import Optional
 import datetime
 import traceback
 import os
 from loguru import logger
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from cache import schedule_cache
 from observability.metrics import api_requests
@@ -26,12 +28,16 @@ from database import save_schedule
 from models import WeekResponse, ScheduleResponse
 from utils.version import get_version, get_git_commit, get_git_branch
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 # Initialize router with tags for API documentation
 router = APIRouter(
     tags=["schedules"],
     responses={
         503: {"description": "Service unavailable - connection error"},
         500: {"description": "Internal server error"},
+        429: {"description": "Too many requests - rate limit exceeded"},
     },
 )
 
@@ -109,7 +115,9 @@ async def get_server_stats():
     summary="Get week number",
     description="Calculate week number based on action (current/next/previous week)",
 )
+@limiter.limit("60/minute")
 async def get_weeks(
+    request: Request,
     action: str = Query(
         "this", description="Week action to perform (this, next, last)"
     ),
@@ -176,7 +184,9 @@ async def get_weeks(
     summary="Get schedule by week",
     description="Fetch schedule for a specific group and week number",
 )
+@limiter.limit("60/minute")
 async def get_schedules(
+    request: Request,
     group_id: int = Path(..., description="BSU group ID", examples=[12345]),
     week: Optional[str] = Query(
         None,
@@ -241,7 +251,11 @@ async def refresh_schedule(
     The request requires ``ADMIN_API_TOKEN`` and is rate-limited per group.
     """
     admin_token = os.getenv("ADMIN_API_TOKEN")
+    # Sanitize Authorization header in logs
+    masked_auth = "Bearer ***" if authorization and authorization.startswith("Bearer ") else None
+    
     if not admin_token or authorization != f"Bearer {admin_token}":
+        logger.warning(f"Unauthorized admin refresh attempt for group {group_id}, auth: {masked_auth}")
         raise HTTPException(status_code=401, detail="Admin API token required")
     rate_limit = int(os.getenv("ADMIN_REFRESH_RATE_LIMIT", "5"))
     rate_window = int(os.getenv("ADMIN_REFRESH_RATE_WINDOW_SECONDS", "60"))

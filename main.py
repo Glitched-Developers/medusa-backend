@@ -19,8 +19,11 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 from logger import setup_logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from database import init_database
 from routes import router
@@ -31,11 +34,21 @@ from utils.version import get_version
 # Initialize the logger
 logger = setup_logging("INFO")
 
+# Initialize rate limiter for public endpoints
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+
 
 # FastAPI application instance with metadata
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Initialize resources on startup and stop background work on shutdown."""
+    # Validate required environment variables
+    admin_token = os.getenv("ADMIN_API_TOKEN")
+    if not admin_token:
+        logger.warning(
+            "ADMIN_API_TOKEN is not set. Admin refresh endpoint will be unavailable."
+        )
+    
     await init_database()
     updater = None
     if os.getenv("SCHEDULE_UPDATER_ENABLED", "true").lower() in {"1", "true", "yes"}:
@@ -57,19 +70,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Register rate limit handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Add CORS middleware to allow requests from dashboard
+# CORS origins are configurable via CORS_ALLOWED_ORIGINS env var (comma-separated)
+# Default: localhost development ports
+cors_origins_str = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:8080,http://127.0.0.1:8080,http://localhost:8000,http://127.0.0.1:8000",
+)
+cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Next.js default development port
-        "http://127.0.0.1:3000",  # Alternative localhost
-        "http://localhost:3001",  # Alternative port
-        "http://127.0.0.1:3001",  # Alternative localhost and port
-        "http://localhost:8080",  # Backend server itself
-        "http://127.0.0.1:8080",  # Alternative backend URL
-        "http://localhost:8000",  # Alternative backend port
-        "http://127.0.0.1:8000",  # Alternative backend URL and port
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

@@ -90,6 +90,7 @@ async def init_database() -> None:
 
     Raises:
         SQLAlchemyError: If database operations fail during initialization
+        ValueError: If database schema version does not match expected version
 
     Note:
         This function is safe to call multiple times - it won't recreate
@@ -100,3 +101,53 @@ async def init_database() -> None:
     async with engine.connect() as conn:
         await conn.execute(select(1))
     logger.info("Database connection verified.")
+    
+    # Verify database schema version
+    await verify_database_schema()
+
+
+async def verify_database_schema() -> None:
+    """
+    Verify that the database schema matches the expected version.
+    
+    Checks the alembic_version table to ensure migrations are up-to-date.
+    
+    Raises:
+        ValueError: If schema version does not match expected version or if alembic_version table is missing
+    """
+    expected_revision = "0003"  # Latest migration revision
+    
+    try:
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            # Query current schema version from alembic_version table
+            result = await conn.execute(text("SELECT version_num FROM alembic_version"))
+            row = result.fetchone()
+            
+            if row is None:
+                logger.warning("No schema version found in alembic_version table")
+                raise ValueError(
+                    "Database schema version not found. Please run migrations: alembic upgrade head"
+                )
+            
+            current_revision = row[0]
+            
+            if current_revision != expected_revision:
+                logger.error(
+                    f"Database schema mismatch: expected {expected_revision}, found {current_revision}"
+                )
+                raise ValueError(
+                    f"Database schema version mismatch. Expected: {expected_revision}, Found: {current_revision}. "
+                    f"Please run migrations: alembic upgrade head"
+                )
+            
+            logger.info(f"Database schema version verified: {current_revision}")
+            
+    except Exception as e:
+        error_message = str(e).lower()
+        if "no such table" in error_message and "alembic_version" in error_message:
+            logger.error("alembic_version table does not exist - database is not initialized")
+            raise ValueError(
+                "Database is not initialized. Please run migrations: alembic upgrade head"
+            ) from e
+        raise
