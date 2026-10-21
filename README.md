@@ -89,7 +89,6 @@ Medusa Backend provides interactive API documentation out of the box.
 | `GET` | `/weeks?action=this_week` | Get current academic week info |
 | `GET` | `/groups/{id}/schedules/current` | Get current schedule for a group |
 | `GET` | `/groups/{id}/schedules?week=15` | Get schedule for a specific week |
-| `GET` | `/stats` | Get system statistics |
 
 ## 🛠️ Development
 

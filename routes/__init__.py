@@ -6,12 +6,10 @@ It provides endpoints for fetching week calculations and BSU class schedules.
 
 Available endpoints:
 - GET /: Redirect to API documentation
-- GET /stats: Get server status as JSON API
 - GET /weeks: Get week number calculations
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 """
 
-import datetime
 import os
 import traceback
 from typing import Optional
@@ -29,7 +27,6 @@ from cache import schedule_cache
 from database import engine, save_schedule
 from models import ScheduleResponse, WeekResponse
 from observability.metrics import api_requests
-from utils.version import get_git_branch, get_git_commit, get_version
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -84,60 +81,6 @@ async def redirect_to_docs():
         RedirectResponse: Redirect to API docs
     """
     return RedirectResponse(url="/docs", status_code=302)
-
-
-@router.get(
-    "/stats",
-    summary="Server status API",
-    description="Get server status and basic information as JSON",
-)
-async def get_server_stats():
-    """
-    Get server status with basic information.
-
-    Returns server health status, current time, and API information as JSON.
-    Now includes Git-based version information with commit hash and branch.
-
-    Returns:
-        dict: Server status information including:
-            - status: Server health status
-            - timestamp: Current server time
-            - service_info: API metadata
-            - git_info: Git version, commit, and branch information
-
-    Example:
-        GET /stats -> {"status": "OK", "timestamp": "2024-01-15T10:30:00Z", "version": "v1.0.0+abc1234", ...}
-    """
-    # Get Git information
-    version = get_version()
-    commit = get_git_commit()
-    branch = get_git_branch()
-
-    response = {
-        "status": "OK",
-        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-        "service": "Medusa Backend API",
-        "version": version,
-        "description": "RESTful API for BSU class schedules management",
-        "endpoints": {
-            "docs": "/docs",
-            "redoc": "/redoc",
-            "weeks": "/weeks",
-            "schedules": "/groups/{group_id}/schedules",
-        },
-    }
-
-    # Add Git information if available
-    git_info = {}
-    if commit:
-        git_info["commit"] = commit
-    if branch:
-        git_info["branch"] = branch
-
-    if git_info:
-        response["git"] = git_info
-
-    return response
 
 
 @router.get(
