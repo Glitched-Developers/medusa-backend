@@ -14,11 +14,9 @@ import httpx
 from bs4 import BeautifulSoup, NavigableString
 from loguru import logger
 from pybreaker import CircuitBreakerError
-from pydantic import ValidationError
 
 from api.circuit_breaker import bsu_breaker
 from cache import schedule_cache
-from models import ParsedSchedule
 from utils import teacher_name_normalizer, week_validator
 
 # HTTP request headers to bypass server restrictions

@@ -9,8 +9,7 @@ Circuit breaker для защиты от каскадных ошибок при 
 import os
 
 import httpx
-from loguru import logger
-from pybreaker import CircuitBreaker, CircuitBreakerError, CircuitBreakerListener
+from pybreaker import CircuitBreaker, CircuitBreakerListener
 
 from observability.metrics import circuit_breaker_state
 
