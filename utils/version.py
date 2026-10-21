@@ -5,8 +5,8 @@ This module provides Git-based version tracking functionality.
 It combines git tags with commit hashes to create meaningful version strings.
 """
 
-import subprocess
 import os
+import subprocess
 from typing import Optional
 
 

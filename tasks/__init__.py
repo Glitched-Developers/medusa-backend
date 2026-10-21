@@ -17,11 +17,12 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from database import engine, save_schedule, table
-from sqlalchemy import select
 from loguru import logger
+from sqlalchemy import select
+
 from api import fetch_schedule
 from cache import schedule_cache
+from database import engine, save_schedule, table
 from observability.metrics import schedule_updates
 from utils import normalize_timezone
 

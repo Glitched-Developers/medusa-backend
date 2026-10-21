@@ -11,25 +11,25 @@ Available endpoints:
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 """
 
-from fastapi import APIRouter, Header, HTTPException, Query, Path, Request
-from fastapi.responses import RedirectResponse
-from typing import Optional
 import datetime
-import traceback
 import os
+import traceback
+from typing import Optional
+
+from fastapi import APIRouter, Header, HTTPException, Path, Query, Request
+from fastapi.responses import RedirectResponse
 from loguru import logger
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-
-from cache import schedule_cache
-from database import engine
 from sqlalchemy import text
+
+from api import WeekActions, fetch_schedule, fetch_week
 from api.circuit_breaker import get_breaker_state
+from cache import schedule_cache
+from database import engine, save_schedule
+from models import ScheduleResponse, WeekResponse
 from observability.metrics import api_requests
-from api import fetch_week, fetch_schedule, WeekActions
-from database import save_schedule
-from models import WeekResponse, ScheduleResponse
-from utils.version import get_version, get_git_commit, get_git_branch
+from utils.version import get_git_branch, get_git_commit, get_version
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -66,7 +66,9 @@ async def health_check(request: Request):
         checks["redis"] = "error"
     checks["circuit_breaker"] = get_breaker_state()
     updater = getattr(request.app.state, "updater", None)
-    checks["background_updater"] = "ok" if updater is None or not updater.done() else "stopped"
+    checks["background_updater"] = (
+        "ok" if updater is None or not updater.done() else "stopped"
+    )
     healthy = checks["database"] == "ok" and checks["redis"] == "ok"
     return {"status": "ok" if healthy else "degraded", "checks": checks}
 
@@ -281,10 +283,14 @@ async def refresh_schedule(
     """
     admin_token = os.getenv("ADMIN_API_TOKEN")
     # Sanitize Authorization header in logs
-    masked_auth = "Bearer ***" if authorization and authorization.startswith("Bearer ") else None
-    
+    masked_auth = (
+        "Bearer ***" if authorization and authorization.startswith("Bearer ") else None
+    )
+
     if not admin_token or authorization != f"Bearer {admin_token}":
-        logger.warning(f"Unauthorized admin refresh attempt for group {group_id}, auth: {masked_auth}")
+        logger.warning(
+            f"Unauthorized admin refresh attempt for group {group_id}, auth: {masked_auth}"
+        )
         raise HTTPException(status_code=401, detail="Admin API token required")
     rate_limit = int(os.getenv("ADMIN_REFRESH_RATE_LIMIT", "5"))
     rate_window = int(os.getenv("ADMIN_REFRESH_RATE_WINDOW_SECONDS", "60"))

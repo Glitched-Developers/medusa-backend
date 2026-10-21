@@ -2,24 +2,24 @@
 API module for fetching and parsing class schedules from the bsuedu.ru website.
 """
 
-import traceback
 import asyncio
-from loguru import logger
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any, TypedDict
-import os
-
 import enum
-import httpx
+import os
 import re
+import traceback
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, TypedDict
+
+import httpx
 from bs4 import BeautifulSoup, NavigableString
+from loguru import logger
 from pybreaker import CircuitBreakerError
 from pydantic import ValidationError
 
-from utils import week_validator, teacher_name_normalizer
-from cache import schedule_cache
 from api.circuit_breaker import bsu_breaker
+from cache import schedule_cache
 from models import ParsedSchedule
+from utils import teacher_name_normalizer, week_validator
 
 # HTTP request headers to bypass server restrictions
 HEADERS = {
@@ -90,7 +90,7 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/week/week_json.php?week={week}&act={action.value}"
         logger.debug(f"Fetching week data from: {url}")
-        
+
         @bsu_breaker
         async def _fetch():
             for attempt in range(UPSTREAM_RETRIES):
@@ -106,7 +106,7 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
                     if attempt == UPSTREAM_RETRIES - 1:
                         raise
                     await asyncio.sleep(RETRY_DELAY * (2**attempt))
-        
+
         data = await _fetch()
 
         if not data or not isinstance(data, list):
@@ -118,7 +118,9 @@ async def fetch_week(action: WeekActions = WeekActions.THIS_WEEK, week=0) -> int
         return result
     except CircuitBreakerError as e:
         logger.error(f"Circuit breaker is open for BSU upstream: {e}")
-        raise ConnectionError("BSU upstream is temporarily unavailable (circuit breaker open)") from e
+        raise ConnectionError(
+            "BSU upstream is temporarily unavailable (circuit breaker open)"
+        ) from e
     except (httpx.HTTPError, IndexError, ValueError) as e:
         logger.error(
             f"Failed to fetch week data: {type(e).__name__}: {e}\n{traceback.format_exc()}"
@@ -424,7 +426,7 @@ async def fetch_schedule(
         proxy = os.environ.get("BSU_PROXY")
         url = f"https://bsuedu.ru/bsu/education/schedule/groups/show_schedule.php?group={group}&week={week}"
         logger.debug(f"Fetching schedule for group {group}, week {week} from: {url}")
-        
+
         @bsu_breaker
         async def _fetch():
             for attempt in range(UPSTREAM_RETRIES):
@@ -439,7 +441,7 @@ async def fetch_schedule(
                     if attempt == UPSTREAM_RETRIES - 1:
                         raise
                     await asyncio.sleep(RETRY_DELAY * (2**attempt))
-        
+
         data = await _fetch()
 
         result = parse_schedule(
@@ -449,7 +451,9 @@ async def fetch_schedule(
         return result
     except CircuitBreakerError as e:
         logger.error(f"Circuit breaker is open for BSU upstream: {e}")
-        raise ConnectionError("BSU upstream is temporarily unavailable (circuit breaker open)") from e
+        raise ConnectionError(
+            "BSU upstream is temporarily unavailable (circuit breaker open)"
+        ) from e
     except (httpx.HTTPError, IndexError, ValueError) as e:
         logger.error(
             f"Failed to fetch schedule data: {type(e).__name__}: {e}\n{traceback.format_exc()}"

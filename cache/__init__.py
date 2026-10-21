@@ -7,7 +7,8 @@ from typing import Any, Optional
 
 from loguru import logger
 from redis.asyncio import Redis
-from observability.metrics import cache_operations, cache_hits, cache_misses
+
+from observability.metrics import cache_hits, cache_misses, cache_operations
 
 
 class ScheduleCache:

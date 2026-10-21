@@ -2,9 +2,10 @@
 Test configuration and fixtures for Medusa Backend tests
 """
 
-import pytest
 import asyncio
 from typing import Generator
+
+import pytest
 
 
 @pytest.fixture(scope="session")

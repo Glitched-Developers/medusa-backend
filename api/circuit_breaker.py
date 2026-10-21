@@ -7,15 +7,17 @@ Circuit breaker для защиты от каскадных ошибок при 
 """
 
 import os
+
+import httpx
 from loguru import logger
 from pybreaker import CircuitBreaker, CircuitBreakerError, CircuitBreakerListener
-import httpx
-from observability.metrics import circuit_breaker_state
 
+from observability.metrics import circuit_breaker_state
 
 # Конфигурация circuit breaker из переменных окружения
 BREAKER_FAIL_MAX = int(os.getenv("CIRCUIT_BREAKER_FAIL_MAX", "5"))
 BREAKER_TIMEOUT_SECONDS = int(os.getenv("CIRCUIT_BREAKER_TIMEOUT_SECONDS", "60"))
+
 
 class _MetricsListener(CircuitBreakerListener):
     """Publish circuit-breaker transitions to Prometheus."""

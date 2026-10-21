@@ -1,8 +1,10 @@
 import json
-import pytest
 import os
 from pathlib import Path
-from api import parse_schedule, fetch_schedule
+
+import pytest
+
+from api import fetch_schedule, parse_schedule
 
 
 @pytest.mark.asyncio

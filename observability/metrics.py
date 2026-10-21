@@ -19,12 +19,8 @@ cache_operations = Counter(
     "medusa_cache_operations_total", "Cache operations", ["operation", "result"]
 )
 # Cache hit/miss tracking for schedule and week lookups.
-cache_hits = Counter(
-    "medusa_cache_hits_total", "Cache hits", ["cache_type"]
-)
-cache_misses = Counter(
-    "medusa_cache_misses_total", "Cache misses", ["cache_type"]
-)
+cache_hits = Counter("medusa_cache_hits_total", "Cache hits", ["cache_type"])
+cache_misses = Counter("medusa_cache_misses_total", "Cache misses", ["cache_type"])
 # Completed background schedule refreshes, partitioned by outcome.
 schedule_updates = Counter(
     "medusa_schedule_updates_total", "Schedule refreshes", ["result"]

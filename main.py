@@ -18,19 +18,18 @@ from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import uvicorn
-
-from logger import setup_logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
-from database import init_database, engine
 from cache import schedule_cache
+from database import engine, init_database
+from logger import setup_logging
+from observability.metrics import metrics_app
 from routes import router
 from tasks import schedule_update_task
-from observability.metrics import metrics_app
 from utils.version import get_version
 
 # Initialize the logger
@@ -50,7 +49,7 @@ async def lifespan(_app: FastAPI):
         logger.warning(
             "ADMIN_API_TOKEN is not set. Admin refresh endpoint will be unavailable."
         )
-    
+
     await init_database()
     updater = None
     if os.getenv("SCHEDULE_UPDATER_ENABLED", "true").lower() in {"1", "true", "yes"}:
@@ -85,8 +84,15 @@ async def request_context_middleware(request: Request, call_next):
     request.state.request_id = request_id
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
-    logger.info("request_completed request_id={} method={} path={} status={}", request_id, request.method, request.url.path, response.status_code)
+    logger.info(
+        "request_completed request_id={} method={} path={} status={}",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+    )
     return response
+
 
 # Register rate limit handler
 app.state.limiter = limiter
@@ -99,7 +105,9 @@ cors_origins_str = os.getenv(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:8080,http://127.0.0.1:8080,http://localhost:8000,http://127.0.0.1:8000",
 )
-cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+cors_origins = [
+    origin.strip() for origin in cors_origins_str.split(",") if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
