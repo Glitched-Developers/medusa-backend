@@ -4,7 +4,7 @@ The application exports these metrics through ``GET /metrics``. Prometheus
 scrapes that endpoint; this module does not persist metric samples itself.
 """
 
-from prometheus_client import Counter, Histogram, make_asgi_app
+from prometheus_client import Counter, Gauge, Histogram, make_asgi_app
 
 # Total API responses, partitioned by HTTP method, route, and status code.
 api_requests = Counter(
@@ -34,6 +34,10 @@ upstream_latency = Histogram(
     "medusa_upstream_request_duration_seconds",
     "Upstream request duration",
     ["resource"],
+)
+# Current BSU circuit-breaker state: 0 closed, 1 open, 2 half-open.
+circuit_breaker_state = Gauge(
+    "medusa_circuit_breaker_state", "BSU circuit breaker state", ["name"]
 )
 
 metrics_app = make_asgi_app()

@@ -15,6 +15,7 @@ The application includes:
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from uuid import uuid4
 
 import uvicorn
 
@@ -25,7 +26,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from database import init_database
+from database import init_database, engine
+from cache import schedule_cache
 from routes import router
 from tasks import schedule_update_task
 from observability.metrics import metrics_app
@@ -53,12 +55,18 @@ async def lifespan(_app: FastAPI):
     updater = None
     if os.getenv("SCHEDULE_UPDATER_ENABLED", "true").lower() in {"1", "true", "yes"}:
         updater = asyncio.create_task(schedule_update_task())
+    _app.state.updater = updater
     try:
         yield
     finally:
         if updater is not None:
             updater.cancel()
-            await asyncio.gather(updater, return_exceptions=True)
+            try:
+                await asyncio.wait_for(updater, timeout=10)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                logger.warning("Background updater did not stop cleanly")
+        await schedule_cache.close()
+        await engine.dispose()
 
 
 app = FastAPI(
@@ -69,6 +77,16 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def request_context_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID", str(uuid4()))
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    logger.info("request_completed request_id={} method={} path={} status={}", request_id, request.method, request.url.path, response.status_code)
+    return response
 
 # Register rate limit handler
 app.state.limiter = limiter

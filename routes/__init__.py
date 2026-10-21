@@ -22,6 +22,9 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from cache import schedule_cache
+from database import engine
+from sqlalchemy import text
+from api.circuit_breaker import get_breaker_state
 from observability.metrics import api_requests
 from api import fetch_week, fetch_schedule, WeekActions
 from database import save_schedule
@@ -40,6 +43,32 @@ router = APIRouter(
         429: {"description": "Too many requests - rate limit exceeded"},
     },
 )
+
+
+@router.get(
+    "/health",
+    summary="Check service health",
+    description="Check database, Redis, circuit breaker, and background updater readiness.",
+    tags=["health"],
+)
+async def health_check(request: Request):
+    checks = {}
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception:
+        checks["database"] = "error"
+    try:
+        await schedule_cache._get_client().ping()
+        checks["redis"] = "ok"
+    except Exception:
+        checks["redis"] = "error"
+    checks["circuit_breaker"] = get_breaker_state()
+    updater = getattr(request.app.state, "updater", None)
+    checks["background_updater"] = "ok" if updater is None or not updater.done() else "stopped"
+    healthy = checks["database"] == "ok" and checks["redis"] == "ok"
+    return {"status": "ok" if healthy else "degraded", "checks": checks}
 
 
 @router.get(
@@ -264,6 +293,9 @@ async def refresh_schedule(
     )
     if not allowed:
         raise HTTPException(status_code=429, detail="Refresh rate limit exceeded")
+    lock_token = await schedule_cache.acquire_lock(f"admin-refresh:{group_id}", ttl=300)
+    if not lock_token:
+        raise HTTPException(status_code=409, detail="A refresh is already in progress")
     try:
         schedule = await fetch_schedule(group=group_id, week=week)
         await save_schedule(group_id, schedule)
@@ -276,3 +308,5 @@ async def refresh_schedule(
         api_requests.labels("POST", "/groups/{group_id}/schedules/refresh", "500").inc()
         logger.exception("Failed to refresh schedule for group %s", group_id)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await schedule_cache.release_lock(f"admin-refresh:{group_id}", lock_token)

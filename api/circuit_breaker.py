@@ -8,13 +8,25 @@ Circuit breaker для защиты от каскадных ошибок при 
 
 import os
 from loguru import logger
-from pybreaker import CircuitBreaker, CircuitBreakerError
+from pybreaker import CircuitBreaker, CircuitBreakerError, CircuitBreakerListener
 import httpx
+from observability.metrics import circuit_breaker_state
 
 
 # Конфигурация circuit breaker из переменных окружения
 BREAKER_FAIL_MAX = int(os.getenv("CIRCUIT_BREAKER_FAIL_MAX", "5"))
 BREAKER_TIMEOUT_SECONDS = int(os.getenv("CIRCUIT_BREAKER_TIMEOUT_SECONDS", "60"))
+
+class _MetricsListener(CircuitBreakerListener):
+    """Publish circuit-breaker transitions to Prometheus."""
+
+    _states = {"closed": 0, "open": 1, "half-open": 2}
+
+    def state_change(self, breaker, old_state, new_state):
+        circuit_breaker_state.labels(breaker.name).set(
+            self._states.get(new_state.name.lower(), -1)
+        )
+
 
 # Создание глобального circuit breaker для BSU upstream
 bsu_breaker = CircuitBreaker(
@@ -24,7 +36,9 @@ bsu_breaker = CircuitBreaker(
         httpx.HTTPStatusError,  # 4xx ошибки не должны открывать breaker
     ],
     name="bsu_upstream",
+    listeners=[_MetricsListener()],
 )
+circuit_breaker_state.labels("bsu_upstream").set(0)
 
 
 def is_breaker_open() -> bool:
