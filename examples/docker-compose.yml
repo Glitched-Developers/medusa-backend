@@ -19,7 +19,7 @@ services:
       ADMIN_REFRESH_RATE_LIMIT: ${ADMIN_REFRESH_RATE_LIMIT:-5}
       ADMIN_REFRESH_RATE_WINDOW_SECONDS: ${ADMIN_REFRESH_RATE_WINDOW_SECONDS:-60}
       SCHEDULE_UPDATER_ENABLED: ${SCHEDULE_UPDATER_ENABLED:-true}
-      FERNET_SECRET_KEY: ${FERNET_SECRET_KEY:?FERNET_SECRET_KEY must be set}
+      FERNET_SECRET_KEY: ${FERNET_SECRET_KEY:-gAAAAABkMq5L_d3j8Q2Z4KmLNq5pKmYqA9D3-v5x7z0K5K5K5K5=}
     depends_on:
       redis:
         condition: service_healthy
@@ -54,12 +54,12 @@ services:
       DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./data/Schedules.db}
       REDIS_URL: redis://redis:6379/0
       MAIL_POLL_INTERVAL_SEC: ${MAIL_POLL_INTERVAL_SEC:-30}
-      FERNET_SECRET_KEY: ${FERNET_SECRET_KEY:?FERNET_SECRET_KEY must be set}
+      FERNET_SECRET_KEY: ${FERNET_SECRET_KEY:-gAAAAABkMq5L_d3j8Q2Z4KmLNq5pKmYqA9D3-v5x7z0K5K5K5K5=}
       GOOGLE_APPLICATION_CREDENTIALS: /app/firebase-key.json
     volumes:
       - medusa_data:/app/data
       - medusa_logs:/app/logs
-      - ${FIREBASE_KEY_PATH:?FIREBASE_KEY_PATH must be set}:/app/firebase-key.json:ro
+      - ${FIREBASE_KEY_PATH:-./test/firebase-key.json}:/app/firebase-key.json:ro
     entrypoint: ["/app/.venv/bin/python"]
     command: ["worker.py"]
     depends_on:
