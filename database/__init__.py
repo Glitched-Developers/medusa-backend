@@ -44,6 +44,8 @@ table = Table(
     ),
 )
 
+from database.mail import user_devices, user_mail_accounts  # noqa: E402
+
 
 async def save_schedule(group: int, schedule_data: dict) -> None:
     """Insert or update a group's schedule snapshot.
@@ -155,7 +157,5 @@ async def verify_database_schema() -> None:
             ) from e
         raise
 
-
-from database.mail import user_devices, user_mail_accounts
 
 __all__ = ["engine", "meta", "table", "user_devices", "user_mail_accounts"]
