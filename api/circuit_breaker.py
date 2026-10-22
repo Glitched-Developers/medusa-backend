@@ -64,7 +64,5 @@ def get_breaker_state() -> dict:
     return {
         "state": bsu_breaker.current_state,
         "fail_counter": bsu_breaker.fail_counter,
-        "last_failure": (
-            last_failure_time.isoformat() if last_failure_time else None
-        ),
+        "last_failure": (last_failure_time.isoformat() if last_failure_time else None),
     }

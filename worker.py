@@ -25,7 +25,9 @@ async def main() -> None:
     loop = asyncio.get_running_loop()
     for signum in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(signum, stop.set)
-    redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+    redis = Redis.from_url(
+        os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True
+    )
     interval = int(os.getenv("MAIL_POLL_INTERVAL_SEC", "900"))
     try:
         while not stop.is_set():

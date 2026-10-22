@@ -44,6 +44,7 @@ table = Table(
     ),
 )
 
+
 async def save_schedule(group: int, schedule_data: dict) -> None:
     """Insert or update a group's schedule snapshot.
 

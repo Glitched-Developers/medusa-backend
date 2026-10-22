@@ -15,7 +15,6 @@ The models provide:
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
-from models.mail import ConnectMailRequest, DeviceTokenRequest, OperationStatusResponse
 
 
 class WeekResponse(BaseModel):
