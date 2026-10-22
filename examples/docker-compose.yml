@@ -1,27 +1,25 @@
 services:
-  medusa:
+  api:
     image: ghcr.io/shizamuru-dev/medusa-backend:latest
     # build: .
     container_name: medusa
     ports:
-      - "8080:8080"  # Backend API
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
+      - "8080:8080"
     environment:
-      - PORT=8080
-      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/Schedules.db}
-      - REDIS_URL=redis://redis:6379/0
-      - REDIS_CACHE_TTL=2700
-      - SCHEDULE_UPDATE_INTERVAL_MINUTES=${SCHEDULE_UPDATE_INTERVAL_MINUTES:-90}
-      - SCHEDULE_FRESHNESS_MINUTES=${SCHEDULE_FRESHNESS_MINUTES:-45}
-      - BSU_RETRIES=${BSU_RETRIES:-3}
-      - BSU_RETRY_DELAY=${BSU_RETRY_DELAY:-1}
-      - BSU_TIMEOUT=${BSU_TIMEOUT:-10}
-      - ADMIN_API_TOKEN=${ADMIN_API_TOKEN:?ADMIN_API_TOKEN must be set}
-      - ADMIN_REFRESH_RATE_LIMIT=${ADMIN_REFRESH_RATE_LIMIT:-5}
-      - ADMIN_REFRESH_RATE_WINDOW_SECONDS=${ADMIN_REFRESH_RATE_WINDOW_SECONDS:-60}
-      - SCHEDULE_UPDATER_ENABLED=${SCHEDULE_UPDATER_ENABLED:-true}
+      PORT: "8080"
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./data/Schedules.db}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_TTL: "2700"
+      SCHEDULE_UPDATE_INTERVAL_MINUTES: ${SCHEDULE_UPDATE_INTERVAL_MINUTES:-90}
+      SCHEDULE_FRESHNESS_MINUTES: ${SCHEDULE_FRESHNESS_MINUTES:-45}
+      BSU_RETRIES: ${BSU_RETRIES:-3}
+      BSU_RETRY_DELAY: ${BSU_RETRY_DELAY:-1}
+      BSU_TIMEOUT: ${BSU_TIMEOUT:-10}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:?ADMIN_API_TOKEN must be set}
+      ADMIN_REFRESH_RATE_LIMIT: ${ADMIN_REFRESH_RATE_LIMIT:-5}
+      ADMIN_REFRESH_RATE_WINDOW_SECONDS: ${ADMIN_REFRESH_RATE_WINDOW_SECONDS:-60}
+      SCHEDULE_UPDATER_ENABLED: ${SCHEDULE_UPDATER_ENABLED:-true}
+      FERNET_SECRET_KEY: ${FERNET_SECRET_KEY:?FERNET_SECRET_KEY must be set}
     depends_on:
       redis:
         condition: service_healthy
@@ -33,7 +31,7 @@ services:
       - medusa_logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -49,10 +47,34 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  worker:
+    image: ghcr.io/shizamuru-dev/medusa-backend:latest
+    container_name: medusa-worker
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./data/Schedules.db}
+      REDIS_URL: redis://redis:6379/0
+      MAIL_POLL_INTERVAL_SEC: ${MAIL_POLL_INTERVAL_SEC:-30}
+      FERNET_SECRET_KEY: ${FERNET_SECRET_KEY:?FERNET_SECRET_KEY must be set}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/firebase-key.json
+    volumes:
+      - medusa_data:/app/data
+      - medusa_logs:/app/logs
+      - ${FIREBASE_KEY_PATH:?FIREBASE_KEY_PATH must be set}:/app/firebase-key.json:ro
+    entrypoint: ["/app/.venv/bin/python"]
+    command: ["worker.py"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - medusa-network
+
   redis:
     image: redis:7-alpine
     container_name: medusa-redis
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
     volumes:
       - medusa_redis:/data
     restart: unless-stopped
