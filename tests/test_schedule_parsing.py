@@ -13,7 +13,7 @@ class TestScheduleParsing:
     """Test cases for HTML schedule parsing functionality"""
 
     def setup_method(self):
-        """Set up test data paths"""
+        """Set up dev_test data paths"""
         self.test_dir = Path(__file__).parent
         self.html_file = self.test_dir / "data" / "test_schedule.htm"
         self.response_file = self.test_dir / "data" / "schedule.json"

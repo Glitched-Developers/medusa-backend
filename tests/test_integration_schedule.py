@@ -10,12 +10,12 @@ from api import fetch_schedule, parse_schedule
 @pytest.mark.asyncio
 async def test_schedule_integration():
     """
-    Integration test that:
+    Integration dev_test that:
     1. Parses local test_schedule.htm and compares with schedule.json
     2. If successful, fetches real data from BSU and compares with schedule.json
     """
-    # 1. Load test data
-    # Use path relative to this test file
+    # 1. Load dev_test data
+    # Use path relative to this dev_test file
     current_dir = Path(__file__).parent
     html_path = current_dir / "data" / "test_schedule.htm"
     json_path = current_dir / "data" / "schedule.json"

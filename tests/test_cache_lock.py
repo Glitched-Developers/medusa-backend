@@ -15,9 +15,9 @@ async def test_lock_uses_token_and_owner_safe_release(monkeypatch):
             return 1
 
     monkeypatch.setattr(cache, "_get_client", lambda: FakeRedis())
-    token = await cache.acquire_lock("test")
+    token = await cache.acquire_lock("dev_test")
     assert token
-    await cache.release_lock("test", token)
+    await cache.release_lock("dev_test", token)
 
 
 @pytest.mark.asyncio

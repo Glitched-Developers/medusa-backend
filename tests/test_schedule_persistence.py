@@ -7,7 +7,7 @@ from database import meta, save_schedule, table
 async def test_save_schedule_inserts_and_updates_group(tmp_path, monkeypatch):
     from sqlalchemy.ext.asyncio import create_async_engine
 
-    test_engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'test.db'}")
+    test_engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'dev_test.db'}")
     monkeypatch.setattr("database.engine", test_engine)
 
     async with test_engine.begin() as connection:
