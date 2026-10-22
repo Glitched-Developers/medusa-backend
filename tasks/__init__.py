@@ -249,3 +249,4 @@ async def schedule_update_task():
         # Wait 90 minutes before next update cycle
         logger.info(f"Next schedule update in {UPDATE_INTERVAL_MINUTES} minutes")
         await asyncio.sleep(UPDATE_INTERVAL_MINUTES * 60)
+from tasks.mail_poller import poll_mail_batch

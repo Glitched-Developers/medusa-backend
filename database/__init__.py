@@ -44,7 +44,6 @@ table = Table(
     ),
 )
 
-
 async def save_schedule(group: int, schedule_data: dict) -> None:
     """Insert or update a group's schedule snapshot.
 
@@ -115,7 +114,7 @@ async def verify_database_schema() -> None:
     Raises:
         ValueError: If schema version does not match expected version or if alembic_version table is missing
     """
-    expected_revision = "0003"  # Latest migration revision
+    expected_revision = "0004"  # Latest migration revision
 
     try:
         from sqlalchemy import text
@@ -154,3 +153,8 @@ async def verify_database_schema() -> None:
                 "Database is not initialized. Please run migrations: alembic upgrade head"
             ) from e
         raise
+
+
+from database.mail import user_devices, user_mail_accounts
+
+__all__ = ["engine", "meta", "table", "user_devices", "user_mail_accounts"]

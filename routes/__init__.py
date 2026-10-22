@@ -27,6 +27,7 @@ from cache import schedule_cache
 from database import engine, save_schedule
 from models import ScheduleResponse, WeekResponse
 from observability.metrics import api_requests
+from routes.mail import router as mail_router
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -40,6 +41,7 @@ router = APIRouter(
         429: {"description": "Too many requests - rate limit exceeded"},
     },
 )
+router.include_router(mail_router)
 
 
 @router.get(
