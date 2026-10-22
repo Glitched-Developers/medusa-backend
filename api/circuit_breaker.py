@@ -59,12 +59,12 @@ def get_breaker_state() -> dict:
     Returns:
         dict: Словарь с полями state, fail_counter, last_failure_time
     """
+    last_failure_time = bsu_breaker._state_storage._opened_at
+
     return {
         "state": bsu_breaker.current_state,
         "fail_counter": bsu_breaker.fail_counter,
         "last_failure": (
-            bsu_breaker.last_failure_time.isoformat()
-            if bsu_breaker.last_failure_time
-            else None
+            last_failure_time.isoformat() if last_failure_time else None
         ),
     }
