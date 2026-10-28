@@ -26,6 +26,11 @@ HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest",
 }
+SEARCH_URL = "https://bsuedu.ru/bsu/education/schedule/search/index.php"
+TEACHER_LINK = re.compile(
+    r"teachers/index\.php\?teacher=(\d+)[^>]*>([^<]*)</a>",
+    re.IGNORECASE,
+)
 UPSTREAM_TIMEOUT = float(os.getenv("BSU_TIMEOUT", "10"))
 UPSTREAM_RETRIES = int(os.getenv("BSU_RETRIES", "3"))
 RETRY_DELAY = float(os.getenv("BSU_RETRY_DELAY", "1"))
@@ -50,6 +55,7 @@ class Lesson(TypedDict, total=False):
     auditory: str
     online: bool
     subgroup: Optional[int]
+    url: str
     key: str
 
 
@@ -209,6 +215,8 @@ def process_day_lessons(lessons: List[Lesson]) -> List[Dict[str, Any]]:
                     "online": sub_lesson["online"],
                     "subgroup": subgroup_num,
                 }
+                if sub_lesson.get("url"):
+                    sub_data["url"] = sub_lesson["url"]
                 main_lesson[f"subgroup_{subgroup_num}"] = sub_data
 
             result.append(main_lesson)
@@ -338,8 +346,10 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
         else:
             lesson_type = lesson_type.capitalize()
 
-        # Get subject name
+        # Get subject name and course URL (Pegasus link in the name cell)
         name = extract_subject_name(name_cell)
+        course_link = name_cell.find("a", href=True)
+        course_url = course_link["href"] if course_link else None
 
         # Determine subgroup
         subgroup = None
@@ -376,6 +386,8 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
             "online": online,
             "key": f"{number}_{time}_{name}_{lesson_type}",
         }
+        if course_url:
+            lesson["url"] = course_url
 
         if subgroup:
             lesson["subgroup"] = subgroup
@@ -457,3 +469,77 @@ async def fetch_schedule(
             f"Failed to fetch schedule data: {type(e).__name__}: {e}\n{traceback.format_exc()}"
         )
         raise ConnectionError(f"Failed to fetch week data: {repr(e)}") from e
+
+
+def _match_teacher_id(html: str, full_name: str) -> Optional[int]:
+    """Pick a teacher id from BSU search HTML.
+
+    An exact link-text match wins. Otherwise the first listed teacher is used,
+    matching the client that originally resolved names this way.
+    """
+    first_id: Optional[str] = None
+    normalized = " ".join(full_name.split())
+    for match in TEACHER_LINK.finditer(html):
+        teacher_id = match.group(1)
+        if first_id is None:
+            first_id = teacher_id
+        text = " ".join(match.group(2).split())
+        if text == normalized:
+            return int(teacher_id)
+    return int(first_id) if first_id is not None else None
+
+
+async def resolve_teacher_id(full_name: str) -> int:
+    """Resolve a BSU teacher id from a full name via the schedule search page.
+
+    Results are cached by name. A missing teacher raises ``LookupError``.
+    Upstream failures raise ``ConnectionError``.
+    """
+    name = " ".join(full_name.split())
+    if not name:
+        raise ValueError("Teacher name is required")
+
+    cached = await schedule_cache.get_teacher(name)
+    if cached is not None:
+        logger.debug(f"Teacher cache hit for {name}")
+        return cached
+
+    try:
+        proxy = os.environ.get("BSU_PROXY")
+
+        @bsu_breaker
+        async def _fetch():
+            for attempt in range(UPSTREAM_RETRIES):
+                try:
+                    async with httpx.AsyncClient(proxy=proxy) as client:
+                        response = await client.get(
+                            SEARCH_URL,
+                            params={"query": name},
+                            headers=HEADERS,
+                            timeout=UPSTREAM_TIMEOUT,
+                        )
+                        response.raise_for_status()
+                        return response.text
+                except httpx.HTTPError:
+                    if attempt == UPSTREAM_RETRIES - 1:
+                        raise
+                    await asyncio.sleep(RETRY_DELAY * (2**attempt))
+
+        html = await _fetch()
+        teacher_id = _match_teacher_id(html, name)
+        if teacher_id is None:
+            raise LookupError(f"Преподаватель не найден: {name}")
+        await schedule_cache.set_teacher(name, teacher_id)
+        return teacher_id
+    except CircuitBreakerError as e:
+        logger.error(f"Circuit breaker is open for BSU upstream: {e}")
+        raise ConnectionError(
+            "BSU upstream is temporarily unavailable (circuit breaker open)"
+        ) from e
+    except LookupError:
+        raise
+    except (httpx.HTTPError, ValueError) as e:
+        logger.error(
+            f"Failed to resolve teacher: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
+        raise ConnectionError(f"Failed to resolve teacher: {repr(e)}") from e

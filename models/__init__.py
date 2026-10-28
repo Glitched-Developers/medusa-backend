@@ -17,6 +17,16 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+class TeacherIdResponse(BaseModel):
+    """Response model for teacher id lookup."""
+
+    teacher_id: int = Field(
+        ...,
+        description="BSU teacher id",
+        json_schema_extra={"examples": [128972]},
+    )
+
+
 class WeekResponse(BaseModel):
     """
     Response model for week calculation endpoints.

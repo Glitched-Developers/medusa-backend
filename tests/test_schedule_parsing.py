@@ -54,6 +54,7 @@ class TestScheduleParsing:
                     "teacher",
                     "auditory",
                     "online",
+                    "url",
                 ]
                 for field in required_fields:
                     assert field in lesson, f"Lesson should contain field: {field}"
@@ -74,6 +75,9 @@ class TestScheduleParsing:
                 assert isinstance(
                     lesson["online"], bool
                 ), "Lesson online flag should be boolean"
+                assert isinstance(lesson["url"], str) and lesson["url"].startswith(
+                    "https://"
+                ), "Lesson url should be an absolute https URL"
 
     def test_parse_with_custom_timestamp(self):
         """Test parsing with custom timestamp"""

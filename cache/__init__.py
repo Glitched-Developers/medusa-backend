@@ -18,6 +18,7 @@ class ScheduleCache:
         """Create a cache adapter using Redis settings from the environment."""
         self.url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.ttl = int(os.getenv("REDIS_CACHE_TTL", "2700"))
+        self.teacher_ttl = int(os.getenv("REDIS_TEACHER_CACHE_TTL", "604800"))
         self._client: Optional[Redis] = None
 
     def _get_client(self) -> Redis:
@@ -40,6 +41,11 @@ class ScheduleCache:
     def week_key(action: str, week: str) -> str:
         """Build the Redis key used for a calculated academic week."""
         return f"medusa:week:{action}:{week}"
+
+    @staticmethod
+    def teacher_key(full_name: str) -> str:
+        """Build the Redis key used for a resolved teacher id."""
+        return f"medusa:teacher:{full_name.casefold()}"
 
     async def get(self, group: int, week: str) -> Optional[dict[str, Any]]:
         """Read a cached schedule, returning ``None`` on a miss or Redis error."""
@@ -89,6 +95,33 @@ class ScheduleCache:
             )
         except Exception as exc:
             logger.warning(f"Redis week cache write failed: {exc}")
+
+    async def get_teacher(self, full_name: str) -> Optional[int]:
+        """Read a cached teacher id, returning ``None`` if unavailable."""
+        try:
+            value = await self._get_client().get(self.teacher_key(full_name))
+            if value is not None:
+                cache_operations.labels("teacher_get", "hit").inc()
+                cache_hits.labels("teacher").inc()
+            else:
+                cache_operations.labels("teacher_get", "miss").inc()
+                cache_misses.labels("teacher").inc()
+            return int(value) if value is not None else None
+        except Exception as exc:
+            cache_operations.labels("teacher_get", "error").inc()
+            logger.warning(f"Redis teacher cache read failed: {exc}")
+            return None
+
+    async def set_teacher(self, full_name: str, teacher_id: int) -> None:
+        """Store a resolved teacher id for the configured TTL."""
+        try:
+            await self._get_client().set(
+                self.teacher_key(full_name), teacher_id, ex=self.teacher_ttl
+            )
+            cache_operations.labels("teacher_set", "success").inc()
+        except Exception as exc:
+            cache_operations.labels("teacher_set", "error").inc()
+            logger.warning(f"Redis teacher cache write failed: {exc}")
 
     async def allow_request(self, key: str, limit: int, window: int) -> bool:
         """Allow at most ``limit`` requests during a Redis-backed time window.

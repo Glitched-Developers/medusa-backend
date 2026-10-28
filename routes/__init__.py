@@ -8,6 +8,7 @@ Available endpoints:
 - GET /: Redirect to API documentation
 - GET /weeks: Get week number calculations
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
+- GET /teachers: Resolve a BSU teacher id from a full name
 """
 
 import os
@@ -21,11 +22,11 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import text
 
-from api import WeekActions, fetch_schedule, fetch_week
+from api import WeekActions, fetch_schedule, fetch_week, resolve_teacher_id
 from api.circuit_breaker import get_breaker_state
 from cache import schedule_cache
 from database import engine, save_schedule
-from models import ScheduleResponse, WeekResponse
+from models import ScheduleResponse, TeacherIdResponse, WeekResponse
 from observability.metrics import api_requests
 from routes.mail import router as mail_router
 
@@ -83,6 +84,39 @@ async def redirect_to_docs():
         RedirectResponse: Redirect to API docs
     """
     return RedirectResponse(url="/docs", status_code=302)
+
+
+@router.get(
+    "/teachers",
+    response_model=TeacherIdResponse,
+    summary="Resolve teacher id",
+    description="Resolve a BSU teacher id from a full name via the schedule search",
+    responses={404: {"description": "Teacher not found"}},
+)
+@limiter.limit("60/minute")
+async def get_teacher_id(
+    request: Request,
+    name: str = Query(..., description="Teacher full name", min_length=1),
+) -> TeacherIdResponse:
+    """Resolve a BSU teacher id, preferring an exact name match."""
+    try:
+        logger.info(f"Teacher lookup: name={name}")
+        teacher_id = await resolve_teacher_id(name)
+        return TeacherIdResponse(teacher_id=teacher_id)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ConnectionError as e:
+        logger.error(
+            f"Connection error in get_teacher_id: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.error(
+            f"Unexpected error in get_teacher_id: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
 @router.get(

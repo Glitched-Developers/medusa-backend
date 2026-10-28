@@ -41,3 +41,18 @@ async def test_week_cache_round_trip():
         await cache.set_week("this_week", "0", 42)
 
     client.set.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_teacher_cache_round_trip():
+    cache = ScheduleCache()
+    client = AsyncMock()
+    client.get.return_value = "128972"
+
+    with patch.object(cache, "_get_client", return_value=client):
+        assert await cache.get_teacher("Иванов Иван Иванович") == 128972
+        await cache.set_teacher("Иванов Иван Иванович", 128972)
+
+    client.set.assert_awaited_once()
+    assert client.set.await_args.args[0] == cache.teacher_key("Иванов Иван Иванович")
+    assert client.set.await_args.kwargs["ex"] == cache.teacher_ttl
