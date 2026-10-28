@@ -89,6 +89,6 @@ README.md
 README_RUS.md
 nginx.conf
 
-dev_test/
+dev/
 # Pre-commit
 .pre-commit-config.yaml

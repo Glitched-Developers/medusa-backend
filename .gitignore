@@ -19,7 +19,7 @@ eggs/
 .eggs/
 lib/
 lib64/
-dev_test/
+dev/
 parts/
 sdist/
 var/
