@@ -53,6 +53,7 @@ class Lesson(TypedDict, total=False):
     name: str
     teacher: str
     auditory: str
+    auditoryId: str
     online: bool
     subgroup: Optional[int]
     url: str
@@ -217,6 +218,8 @@ def process_day_lessons(lessons: List[Lesson]) -> List[Dict[str, Any]]:
                 }
                 if sub_lesson.get("url"):
                     sub_data["url"] = sub_lesson["url"]
+                if sub_lesson.get("auditoryId"):
+                    sub_data["auditoryId"] = sub_lesson["auditoryId"]
                 main_lesson[f"subgroup_{subgroup_num}"] = sub_data
 
             result.append(main_lesson)
@@ -364,8 +367,16 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
         teacher_text = teacher_cell.get_text(strip=True)
         teacher = teacher_name_normalizer(teacher_text)
 
-        # Get auditory and online information
+        # Get auditory and online information. The room link carries the
+        # auditorium id: auditories/index.php?auditory=9700
         auditory = auditory_cell.get_text(strip=True)
+        auditory_link = auditory_cell.find("a", href=True)
+        auditory_id = None
+        if auditory_link:
+            auditory_match = re.search(
+                r"auditory=(\d+)", auditory_link.get("href", "")
+            )
+            auditory_id = auditory_match.group(1) if auditory_match else None
         online = (
             "Для студентов с возможностью подключиться он-лайн" in auditory
             or "Для студентов с возможностью подключиться онлайн" in auditory
@@ -388,6 +399,8 @@ def parse_schedule(html: str, timestamp: Optional[str] = None) -> ScheduleResult
         }
         if course_url:
             lesson["url"] = course_url
+        if auditory_id:
+            lesson["auditoryId"] = auditory_id
 
         if subgroup:
             lesson["subgroup"] = subgroup

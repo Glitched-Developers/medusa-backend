@@ -72,6 +72,9 @@ class TestScheduleParsing:
                 assert isinstance(
                     lesson["auditory"], str
                 ), "Lesson auditory should be string"
+                assert isinstance(lesson["auditoryId"], str) and lesson[
+                    "auditoryId"
+                ].isdigit(), "Lesson auditoryId should be the BSU auditorium id"
                 assert isinstance(
                     lesson["online"], bool
                 ), "Lesson online flag should be boolean"
