@@ -14,7 +14,7 @@ class TestMainApp:
     """Test cases for main FastAPI application"""
 
     def setup_method(self):
-        """Set up dev_test client"""
+        """Set up dev client"""
         self.client = TestClient(app)
 
     def test_app_metadata(self):

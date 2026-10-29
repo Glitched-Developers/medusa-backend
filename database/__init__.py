@@ -117,7 +117,7 @@ async def verify_database_schema() -> None:
     Raises:
         ValueError: If schema version does not match expected version or if alembic_version table is missing
     """
-    expected_revision = "0004"  # Latest migration revision
+    expected_revision = "0005"  # Latest migration revision
 
     try:
         from sqlalchemy import text
@@ -158,4 +158,12 @@ async def verify_database_schema() -> None:
         raise
 
 
-__all__ = ["engine", "meta", "table", "user_devices", "user_mail_accounts"]
+__all__ = [
+    "engine",
+    "meta",
+    "table",
+    "user_devices",
+    "user_mail_accounts",
+    "save_schedule",
+    "init_database",
+]

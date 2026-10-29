@@ -17,6 +17,24 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+class AuditoriumItem(BaseModel):
+    """One room from the BSU auditorium directory."""
+
+    id: str = Field(..., description="BSU auditorium id")
+    name: str = Field(..., description="Room name as published by BSU")
+    token: str = Field(
+        ...,
+        description="Normalized room token, e.g. 6-7_12",
+        json_schema_extra={"examples": ["6-7_12"]},
+    )
+
+
+class AuditoriumListResponse(BaseModel):
+    """The stored id-to-name map."""
+
+    auditoriums: List[AuditoriumItem]
+
+
 class TeacherIdResponse(BaseModel):
     """Response model for teacher id lookup."""
 

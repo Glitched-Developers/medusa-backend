@@ -30,6 +30,7 @@ from logger import setup_logging
 from observability.metrics import metrics_app
 from routes import router
 from tasks import schedule_update_task
+from tasks.auditoriums import auditorium_refresh_task
 from utils.version import get_version
 
 # Initialize the logger
@@ -51,17 +52,20 @@ async def lifespan(_app: FastAPI):
         )
 
     await init_database()
-    updater = None
+    background = []
     if os.getenv("SCHEDULE_UPDATER_ENABLED", "true").lower() in {"1", "true", "yes"}:
-        updater = asyncio.create_task(schedule_update_task())
-    _app.state.updater = updater
+        background.append(asyncio.create_task(schedule_update_task()))
+    if os.getenv("AUDITORIUM_UPDATER_ENABLED", "true").lower() in {"1", "true", "yes"}:
+        background.append(asyncio.create_task(auditorium_refresh_task()))
+    _app.state.updater = background[0] if background else None
     try:
         yield
     finally:
-        if updater is not None:
-            updater.cancel()
+        for task in background:
+            task.cancel()
+        for task in background:
             try:
-                await asyncio.wait_for(updater, timeout=10)
+                await asyncio.wait_for(task, timeout=10)
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 logger.warning("Background updater did not stop cleanly")
         await schedule_cache.close()

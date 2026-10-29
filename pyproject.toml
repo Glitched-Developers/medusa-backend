@@ -148,7 +148,7 @@ exclude_lines = [
 
 [tool.bandit]
 exclude_dirs = ["tests", "venv", ".venv"]
-skips = ["B101"]  # Skip assert_used dev_test
+skips = ["B101"]  # Skip assert_used dev
 
 [tool.setuptools.packages.find]
 include = ["api*", "cache*", "database*", "logger*", "models*", "observability*", "routes*", "tasks*", "utils*"]

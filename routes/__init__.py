@@ -9,6 +9,8 @@ Available endpoints:
 - GET /weeks: Get week number calculations
 - GET /groups/{group_id}/schedules: Get schedule for a specific group and week
 - GET /teachers: Resolve a BSU teacher id from a full name
+- GET /auditories: Stored auditorium id-to-name map
+- GET /auditories/{id}/schedules: Schedule for one auditorium
 """
 
 import os
@@ -23,10 +25,17 @@ from slowapi.util import get_remote_address
 from sqlalchemy import text
 
 from api import WeekActions, fetch_schedule, fetch_week, resolve_teacher_id
+from api.auditoriums import fetch_auditorium_schedule
 from api.circuit_breaker import get_breaker_state
 from cache import schedule_cache
 from database import engine, save_schedule
-from models import ScheduleResponse, TeacherIdResponse, WeekResponse
+from database.auditoriums import get_auditorium, list_auditoriums
+from models import (
+    AuditoriumListResponse,
+    ScheduleResponse,
+    TeacherIdResponse,
+    WeekResponse,
+)
 from observability.metrics import api_requests
 from routes.mail import router as mail_router
 
@@ -241,6 +250,75 @@ async def get_schedules(
     except Exception as e:
         logger.error(
             f"Unexpected error in get_schedules for group {group_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+
+@router.get(
+    "/auditories",
+    response_model=AuditoriumListResponse,
+    summary="List auditoriums",
+    description="Return the stored map of BSU auditorium id to normalized name",
+)
+@limiter.limit("60/minute")
+async def get_auditoriums(request: Request) -> AuditoriumListResponse:
+    """The map is rebuilt in the background about once a month."""
+    try:
+        rows = await list_auditoriums()
+        return AuditoriumListResponse(auditoriums=rows)
+    except Exception as e:
+        logger.error(
+            f"Unexpected error in get_auditoriums: {type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+
+@router.get(
+    "/auditories/{auditorium_id}/schedules",
+    response_model=ScheduleResponse,
+    summary="Get auditorium schedule",
+    description="Fetch the week schedule for one BSU auditorium",
+    responses={404: {"description": "Auditorium is not in the directory"}},
+)
+@limiter.limit("60/minute")
+async def get_auditorium_schedule(
+    request: Request,
+    auditorium_id: str = Path(
+        ..., description="BSU auditorium id", pattern=r"^\d+$", examples=["9700"]
+    ),
+    week: Optional[str] = Query(
+        None,
+        description="Academic week number (defaults to current week)",
+        examples=["0109202507092025"],
+    ),
+) -> ScheduleResponse:
+    """Schedule of a single room.
+
+    The id must already be in the directory crawled from BSU. The week token is
+    the same 16-digit code used by group schedules.
+    """
+    try:
+        known = await get_auditorium(auditorium_id)
+        if known is None:
+            raise HTTPException(status_code=404, detail="Аудитория не найдена")
+        if week is None:
+            week = str(await fetch_week())
+        schedule = await fetch_auditorium_schedule(auditorium_id, week)
+        return ScheduleResponse(schedule=schedule)
+    except HTTPException:
+        raise
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ConnectionError as e:
+        logger.error(
+            f"Connection error in get_auditorium_schedule for {auditorium_id}: "
+            f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.error(
+            f"Unexpected error in get_auditorium_schedule for {auditorium_id}: "
+            f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
         )
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
